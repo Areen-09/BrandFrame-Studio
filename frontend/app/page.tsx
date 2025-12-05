@@ -1,64 +1,119 @@
-import Image from "next/image";
+import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
+import { ArrowRight, Sparkles, Palette, Layers, Grid2X2Plus } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen font-sans bg-white dark:bg-zinc-950">
+      {/* Navigation */}
+      <nav className="fixed w-full z-50 bg-white/70 dark:bg-black/70 backdrop-blur-md border-b border-white/20 dark:border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-2">
+              <Grid2X2Plus className="w-6 h-6 dark:text-white text-black" />
+              <span className="text-xl font-semibold text-zinc-900 dark:text-white">BrandFrame Studio</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <Link
+                href="/login"
+                className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
+              >
+                Log In
+              </Link>
+              <Link
+                href="/login"
+                className="px-4 py-2 text-sm font-medium text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded-full hover:bg-zinc-800 dark:hover:bg-white/90 transition-colors shadow-lg shadow-zinc-900/20 dark:shadow-white/10"
+              >
+                Get Started
+              </Link>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+      </nav>
+
+      <main className="flex flex-col">
+        {/* Hero Section with Background */}
+        <section className="relative h-screen w-full flex items-end pb-20 sm:pb-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
+          {/* Background Images */}
+          <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 bg-[url('/bg-light-theme.jpg')] bg-cover bg-center bg-no-repeat dark:opacity-0 transition-opacity duration-300" />
+            <div className="absolute inset-0 bg-[url('/bg-dark-theme.jpg')] bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-100 transition-opacity duration-300" />
+            {/* Overlay for readability at bottom */}
+            <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/40 to-transparent dark:from-black/90 dark:via-black/40 dark:to-transparent" />
+          </div>
+
+          {/* Hero Content - Aligned Bottom Left */}
+          <div className="relative z-10 max-w-7xl w-full mx-auto">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/50 dark:bg-black/50 backdrop-blur-sm border border-white/20 dark:border-white/10 text-zinc-800 dark:text-zinc-200 text-sm font-medium mb-6">
+                <Sparkles className="w-4 h-4" />
+                <span>AI-Powered Brand Design</span>
+              </div>
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-zinc-900 dark:text-white mb-6 drop-shadow-sm">
+                Create stunning posters
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-zinc-700 to-zinc-900 dark:from-zinc-200 dark:to-white">
+                  in seconds.
+                </span>
+              </h1>
+              <p className="text-lg sm:text-xl text-zinc-800 dark:text-zinc-300 mb-8 max-w-lg font-medium">
+                BrandFrame Studio combines intelligent design tools with your brand identity to generate professional marketing assets for every platform.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center px-8 py-3 text-base font-medium text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded-full hover:bg-zinc-800 dark:hover:bg-white/90 transition-all hover:scale-105 shadow-xl shadow-zinc-900/20 dark:shadow-white/10"
+                >
+                  Start Designing <ArrowRight className="ml-2 w-4 h-4" />
+                </Link>
+                <button className="inline-flex items-center justify-center px-8 py-3 text-base font-medium text-zinc-900 dark:text-white bg-white/80 dark:bg-black/50 backdrop-blur-md rounded-full hover:bg-white dark:hover:bg-black/70 transition-colors border border-zinc-200 dark:border-zinc-700">
+                  View Examples
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Feature Grid - Solid Background */}
+        <section className="bg-zinc-50 dark:bg-zinc-950 py-24 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">Everything you need</h2>
+              <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">Professional branding tools at your fingertips.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:shadow-lg transition-shadow">
+                <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center mb-6">
+                  <Palette className="w-6 h-6 text-zinc-900 dark:text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-3">Smart BrandKits</h3>
+                <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                  Upload your assets once. We automatically apply your colors, fonts, and logos to every design consistent with your identity.
+                </p>
+              </div>
+
+              <div className="p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:shadow-lg transition-shadow">
+                <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center mb-6">
+                  <Layers className="w-6 h-6 text-zinc-900 dark:text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-3">Multi-Format Export</h3>
+                <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                  Generate designs for Instagram Stories, Facebook Posts, and LinkedIn banners instantly with intelligent resizing.
+                </p>
+              </div>
+
+              <div className="p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:shadow-lg transition-shadow">
+                <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center mb-6">
+                  <Sparkles className="w-6 h-6 text-zinc-900 dark:text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-3">AI Generation</h3>
+                <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                  Describe your promotion, and watch as our AI generates multiple professional design options for you to choose from.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );
