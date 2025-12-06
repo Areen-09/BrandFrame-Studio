@@ -1,13 +1,18 @@
+'use client';
+
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ArrowRight, Sparkles, Palette, Layers, Grid2X2Plus } from "lucide-react";
+import { useAuth } from "@/context/auth-context";
 
 export default function Home() {
+  const { user, loading } = useAuth();
+
   return (
     <div className="min-h-screen font-sans bg-white dark:bg-zinc-950">
       {/* Navigation */}
-      <nav className="fixed w-full z-50 bg-white/70 dark:bg-black/70 backdrop-blur-md border-b border-white/20 dark:border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="absolute w-full z-50">
+        <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
               <Grid2X2Plus className="w-6 h-6 dark:text-white text-black" />
@@ -15,18 +20,30 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-4">
               <ThemeToggle />
-              <Link
-                href="/login"
-                className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
-              >
-                Log In
-              </Link>
-              <Link
-                href="/login"
-                className="px-4 py-2 text-sm font-medium text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded-full hover:bg-zinc-800 dark:hover:bg-white/90 transition-colors shadow-lg shadow-zinc-900/20 dark:shadow-white/10"
-              >
-                Get Started
-              </Link>
+              {!loading && !user && (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors"
+                  >
+                    Log In
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="px-4 py-2 text-sm font-medium text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded-full hover:bg-zinc-800 dark:hover:bg-white/90 transition-colors shadow-lg shadow-zinc-900/20 dark:shadow-white/10"
+                  >
+                    Get Started
+                  </Link>
+                </>
+              )}
+              {!loading && user && (
+                <Link
+                  href="/studio"
+                  className="px-4 py-2 text-sm font-medium text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded-full hover:bg-zinc-800 dark:hover:bg-white/90 transition-colors shadow-lg shadow-zinc-900/20 dark:shadow-white/10"
+                >
+                  Go to Studio
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -61,7 +78,7 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  href="/login"
+                  href={user ? "/studio" : "/login"}
                   className="inline-flex items-center justify-center px-8 py-3 text-base font-medium text-white bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 rounded-full hover:bg-zinc-800 dark:hover:bg-white/90 transition-all hover:scale-105 shadow-xl shadow-zinc-900/20 dark:shadow-white/10"
                 >
                   Start Designing <ArrowRight className="ml-2 w-4 h-4" />

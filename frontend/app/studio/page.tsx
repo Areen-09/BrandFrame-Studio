@@ -1,32 +1,43 @@
 'use client';
 
 import Link from 'next/link';
-import { Plus, Settings, LogOut, Search, MoreVertical, Grid2X2Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { Plus, Settings, LogOut, Search, MoreVertical, Grid2X2Plus, Loader2 } from 'lucide-react';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import ThemeToggle from '@/components/ThemeToggle';
-
-// Mock data for existing brandkits
-const MOCK_BRANDKITS = [
-    {
-        id: '1',
-        name: 'Neon Pulse',
-        colors: ['#00f2ff', '#ff00aa', '#000000', '#1a1a1a'],
-        lastEdited: '2 hours ago',
-    },
-    {
-        id: '2',
-        name: 'Eco Green',
-        colors: ['#2d6a4f', '#40916c', '#d8f3dc', '#ffffff'],
-        lastEdited: '1 day ago',
-    },
-    {
-        id: '3',
-        name: 'Minimal Mono',
-        colors: ['#000000', '#333333', '#666666', '#ffffff'],
-        lastEdited: '3 days ago',
-    },
-];
+import { useAuth } from '@/context/auth-context';
+import { getUserBrandKits, BrandKitData } from '@/lib/brandkit-service';
 
 export default function StudioPage() {
+    const router = useRouter();
+    const { user } = useAuth();
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [brandKits, setBrandKits] = useState<BrandKitData[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchBrandKits = async () => {
+            if (user) {
+                const kits = await getUserBrandKits(user.uid);
+                setBrandKits(kits);
+            }
+            setIsLoading(false);
+        };
+        fetchBrandKits();
+    }, [user]);
+
+    // ... existing signout logic
+    const handleSignOut = async () => {
+        try {
+            await signOut(auth);
+            router.push('/login');
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-300">
             {/* Top Navigation */}
@@ -47,9 +58,26 @@ export default function StudioPage() {
                                 />
                             </div>
                             <ThemeToggle />
-                            <button className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
-                                <Settings className="w-5 h-5" />
-                            </button>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                                    className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                                >
+                                    <Settings className="w-5 h-5" />
+                                </button>
+
+                                {isSettingsOpen && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-zinc-200 dark:border-zinc-800 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                        <button
+                                            onClick={handleSignOut}
+                                            className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            Sign out
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                             <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500"></div>
                         </div>
                     </div>
@@ -84,36 +112,55 @@ export default function StudioPage() {
                     </Link>
 
                     {/* Existing BrandKits */}
-                    {MOCK_BRANDKITS.map((kit) => (
-                        <div
-                            key={kit.id}
-                            className="group relative flex flex-col h-64 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:shadow-lg transition-all overflow-hidden"
-                        >
-                            {/* Preview Area (Color Splashes) */}
-                            <div className="flex-1 p-6 relative bg-zinc-50 dark:bg-zinc-800/50">
-                                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md">
-                                        <MoreVertical className="w-4 h-4 text-zinc-500" />
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-2 h-full content-center justify-center">
-                                    {kit.colors.map((color, i) => (
-                                        <div
-                                            key={i}
-                                            className="w-12 h-12 rounded-full shadow-sm border border-black/5 dark:border-white/5"
-                                            style={{ backgroundColor: color }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Footer Info */}
-                            <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                                <h3 className="font-semibold text-zinc-900 dark:text-white">{kit.name}</h3>
-                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Edited {kit.lastEdited}</p>
-                            </div>
+                    {isLoading ? (
+                        <div className="col-span-full flex justify-center py-12">
+                            <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
                         </div>
-                    ))}
+                    ) : brandKits.length === 0 ? (
+                        <div className="col-span-full text-center py-10 text-zinc-500 dark:text-zinc-400">
+                            No brand kits found. Create one to get started!
+                        </div>
+                    ) : (
+                        brandKits.map((kit) => (
+                            <Link
+                                href={`/editor/${kit.id}`}
+                                key={kit.id}
+                                className="group relative flex flex-col h-64 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:shadow-lg transition-all overflow-hidden cursor-pointer"
+                            >
+                                {/* Preview Area (Color Splashes) */}
+                                <div className="flex-1 p-6 relative bg-zinc-50 dark:bg-zinc-800/50">
+                                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md" onClick={(e) => e.preventDefault()}>
+                                            <MoreVertical className="w-4 h-4 text-zinc-500" />
+                                        </button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 h-full content-center justify-center">
+                                        {/* Try to show logo if available, else colors */}
+                                        {kit.logoUrl ? (
+                                            <img src={kit.logoUrl} alt={kit.name} className="h-16 w-16 object-contain mb-2" />
+                                        ) : null}
+                                        <div className="flex gap-2 justify-center w-full">
+                                            {kit.colors.map((color, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="w-8 h-8 rounded-full shadow-sm border border-black/5 dark:border-white/5"
+                                                    style={{ backgroundColor: color }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Footer Info */}
+                                <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                                    <h3 className="font-semibold text-zinc-900 dark:text-white truncate">{kit.name}</h3>
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                                        {kit.createdAt ? new Date(kit.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
+                                    </p>
+                                </div>
+                            </Link>
+                        ))
+                    )}
                 </div>
             </main>
         </div>

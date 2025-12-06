@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
     ArrowLeft, Upload, Palette, Image as ImageIcon,
-    Type, Check, Loader2, ArrowRight, Layout
+    Type, Check, Loader2, ArrowRight, Layout, Trash2
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useAuth } from '@/context/auth-context';
+import { createBrandKit } from '@/lib/brandkit-service';
 
 const STEPS = [
     { id: 'identity', title: 'Identity', icon: Type },
@@ -23,9 +25,11 @@ const STYLE_PRESETS = [
 ];
 
 export default function NewBrandKitPage() {
+    const { user } = useAuth();
     const router = useRouter();
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         name: '',
         logo: null as File | null,
@@ -51,11 +55,71 @@ export default function NewBrandKitPage() {
         }
     };
 
+    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 1024 * 1024) {
+                setUploadError("Logo must be under 1MB");
+                return;
+            }
+            setUploadError(null);
+            setFormData({ ...formData, logo: file });
+        }
+    };
+
+    const handleAssetsUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        const validFiles: File[] = [];
+        let errorMsg = null;
+
+        files.forEach(file => {
+            if (file.size > 1024 * 1024) {
+                errorMsg = `Image ${file.name} exceeds 1MB limit.`;
+            } else {
+                validFiles.push(file);
+            }
+        });
+
+        if (errorMsg) {
+            setUploadError(errorMsg);
+        } else {
+            setUploadError(null);
+        }
+
+        setFormData({ ...formData, images: [...formData.images, ...validFiles] });
+    };
+
+    const removeAsset = (index: number) => {
+        const newImages = [...formData.images];
+        newImages.splice(index, 1);
+        setFormData({ ...formData, images: newImages });
+    };
+
     const handleSubmit = async () => {
+        if (!user) {
+            console.error("No user logged in");
+            return;
+        }
         setIsSubmitting(true);
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        router.push('/editor/new'); // Redirect to editor
+        try {
+            await createBrandKit(
+                user.uid,
+                {
+                    name: formData.name,
+                    colors: formData.colors,
+                    stylePreset: formData.stylePreset,
+                    stylePrompt: formData.stylePrompt,
+                },
+                formData.logo,
+                formData.images
+            );
+            router.push('/studio');
+        } catch (error) {
+            console.error("Failed to create brand kit", error);
+            setUploadError("Failed to create BrandKit. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const updateColor = (index: number, value: string) => {
@@ -100,8 +164,8 @@ export default function NewBrandKitPage() {
                                 <div key={step.id} className="flex flex-col items-center gap-2 bg-white dark:bg-zinc-900 px-2">
                                     <div
                                         className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${isActive || isCompleted
-                                                ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
-                                                : 'border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600'
+                                            ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900'
+                                            : 'border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-600'
                                             }`}
                                     >
                                         {isCompleted ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
@@ -141,13 +205,33 @@ export default function NewBrandKitPage() {
                                 <label className="block text-sm font-medium text-zinc-900 dark:text-white mb-2">
                                     Brand Logo
                                 </label>
-                                <div className="border-2 border-dashed border-zinc-200 dark:border-zinc-700 rounded-xl p-8 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer text-center group">
-                                    <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                                        <Upload className="w-6 h-6 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
-                                    </div>
-                                    <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">Click to upload logo</p>
-                                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">SVG, PNG, JPG (max. 2MB)</p>
+                                <div
+                                    className="border-2 border-dashed border-zinc-200 dark:border-zinc-700 rounded-xl p-8 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer text-center group relative overflow-hidden"
+                                    onClick={() => document.getElementById('logo-upload')?.click()}
+                                >
+                                    <input
+                                        type="file"
+                                        id="logo-upload"
+                                        className="hidden"
+                                        accept="image/png, image/jpeg, image/svg+xml"
+                                        onChange={handleLogoUpload}
+                                    />
+                                    {formData.logo ? (
+                                        <div className="flex flex-col items-center">
+                                            <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Selected: {formData.logo.name}</p>
+                                            <p className="text-xs text-zinc-400">Click to change</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                                <Upload className="w-6 h-6 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
+                                            </div>
+                                            <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">Click to upload logo</p>
+                                            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">SVG, PNG, JPG (max. 1MB)</p>
+                                        </>
+                                    )}
                                 </div>
+                                {uploadError && <p className="text-red-500 text-sm mt-2">{uploadError}</p>}
                             </div>
                         </div>
                     )}
@@ -197,8 +281,8 @@ export default function NewBrandKitPage() {
                                             key={preset.id}
                                             onClick={() => setFormData({ ...formData, stylePreset: preset.id })}
                                             className={`p-4 rounded-xl border-2 text-left transition-all ${formData.stylePreset === preset.id
-                                                    ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-zinc-800/50'
-                                                    : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+                                                ? 'border-zinc-900 dark:border-zinc-100 bg-zinc-50 dark:bg-zinc-800/50'
+                                                : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
                                                 }`}
                                         >
                                             <div className="font-semibold text-zinc-900 dark:text-white">{preset.name}</div>
@@ -232,13 +316,45 @@ export default function NewBrandKitPage() {
                                 </label>
                                 <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">Upload images, patterns, or icons used in your branding.</p>
 
-                                <div className="border-2 border-dashed border-zinc-200 dark:border-zinc-700 rounded-xl p-12 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer text-center group">
+                                <div
+                                    className="border-2 border-dashed border-zinc-200 dark:border-zinc-700 rounded-xl p-12 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer text-center group"
+                                    onClick={() => document.getElementById('assets-upload')?.click()}
+                                >
+                                    <input
+                                        type="file"
+                                        id="assets-upload"
+                                        className="hidden"
+                                        multiple
+                                        accept="image/png, image/jpeg, image/svg+xml"
+                                        onChange={handleAssetsUpload}
+                                    />
                                     <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                                         <ImageIcon className="w-8 h-8 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
                                     </div>
                                     <h4 className="text-lg font-medium text-zinc-900 dark:text-white mb-1">Drop files here</h4>
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">or click to browse</p>
+                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">or click to browse (max 1MB per file)</p>
                                 </div>
+
+                                {uploadError && <p className="text-red-500 text-sm">{uploadError}</p>}
+
+                                {formData.images.length > 0 && (
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-zinc-900 dark:text-white">Selected Assets:</p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                            {formData.images.map((file, idx) => (
+                                                <div key={idx} className="relative group p-2 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+                                                    <div className="text-xs truncate text-zinc-600 dark:text-zinc-300">{file.name}</div>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); removeAsset(idx); }}
+                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -250,8 +366,8 @@ export default function NewBrandKitPage() {
                     <button
                         onClick={handleBack}
                         className={`px-6 py-2.5 text-sm font-medium rounded-full transition-colors ${currentStep === 0
-                                ? 'invisible'
-                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                            ? 'invisible'
+                            : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                             }`}
                     >
                         Back
