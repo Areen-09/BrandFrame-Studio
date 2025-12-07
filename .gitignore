@@ -43,6 +43,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+backend/brandframe-studio-479ef-firebase-adminsdk-fbsvc-78ea90e39f.json
 
 # Virtual Environments
 venv/
@@ -81,3 +82,5 @@ out/
 
 # Vercel
 .vercel/
+
+TRM Hackathon Challenge - GenAI powered Creative Builder with specifics.docx58c68bb (2).pdf

@@ -4,10 +4,12 @@ import { useRef, useState, use } from 'react';
 import Link from 'next/link';
 import {
     ArrowLeft, Type, Image as ImageIcon, Square, Circle as CircleIcon,
-    Download, Moon, Sun, Monitor, Smartphone, Layout
+    Download, Moon, Sun, Monitor, Smartphone, Layout, Wand2, Loader2
 } from 'lucide-react';
 import FabricCanvas, { FabricCanvasHandle } from '@/components/FabricCanvas';
 import ThemeToggle from '@/components/ThemeToggle';
+import { generateCreative, CreativeRequest } from '@/lib/api';
+import { useAuth } from '@/context/auth-context';
 
 // Aspect Ratios
 const FORMATS = [
@@ -19,9 +21,11 @@ const FORMATS = [
 export default function EditorPage({ params }: { params: Promise<{ brandkitId: string }> }) {
     // Unwrap params using React.use()
     const { brandkitId } = use(params);
+    const { user } = useAuth();
 
     const canvasRef = useRef<FabricCanvasHandle>(null);
     const [currentFormat, setCurrentFormat] = useState(FORMATS[0]);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     // Scale factor for display (since 1080px is too big for screen)
     const displayScale = 0.4;
@@ -40,6 +44,36 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+    };
+
+    const handleGenerateAI = async () => {
+        const prompt = window.prompt("Enter a description for your poster (e.g., 'Summer sale for organic juice'):");
+        if (!prompt) return;
+
+        setIsGenerating(true);
+        try {
+            const request: CreativeRequest = {
+                brandkit_id: brandkitId,
+                user_id: user?.uid || '',
+                prompt: prompt,
+                aspect_ratio: currentFormat.id === 'story' ? '9:16' : (currentFormat.id === 'facebook' ? '1.91:1' : '1:1')
+            };
+
+            const response = await generateCreative(request);
+
+            if (response.image_url) {
+                // Add the generated image to the canvas
+                // We use a proxy or cross-origin safe method if needed, but for now direct URL
+                canvasRef.current?.addImage(response.image_url);
+            } else {
+                alert("Failed to generate image. Please try again.");
+            }
+        } catch (error) {
+            console.error("Generation failed", error);
+            alert("Error generating creative.");
+        } finally {
+            setIsGenerating(false);
         }
     };
 
@@ -94,6 +128,8 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             <div className="flex-1 flex overflow-hidden">
                 {/* Sidebar */}
                 <aside className="w-20 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col items-center py-6 gap-6 z-10">
+                    <ToolButton icon={Wand2} label={isGenerating ? "Generating..." : "Generate AI"} onClick={handleGenerateAI} disabled={isGenerating} />
+
                     <ToolButton icon={Layout} label="Templates" onClick={() => {
                         // Mock loading a template
                         const template = {
@@ -137,16 +173,17 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
     );
 }
 
-function ToolButton({ icon: Icon, label, onClick }: { icon: any, label: string, onClick: () => void }) {
+function ToolButton({ icon: Icon, label, onClick, disabled }: { icon: any, label: string, onClick: () => void, disabled?: boolean }) {
     return (
         <button
             onClick={onClick}
-            className="flex flex-col items-center gap-1 group w-full"
+            disabled={disabled}
+            className={`flex flex-col items-center gap-1 group w-full ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
-                <Icon className="w-5 h-5 text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white" />
+            <div className={`w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center ${!disabled && 'group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700'} transition-colors`}>
+                <Icon className={`w-5 h-5 text-zinc-600 dark:text-zinc-400 ${!disabled && 'group-hover:text-zinc-900 dark:group-hover:text-white'}`} />
             </div>
-            <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">{label}</span>
+            <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 text-center leading-tight">{label}</span>
         </button>
     );
 }
