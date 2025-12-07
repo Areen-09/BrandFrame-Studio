@@ -40,16 +40,13 @@ BrandFrame Studio is a Generative AI-powered platform designed to empower advert
 ```bash
 cd backend
 
-# Create and activate virtual environment
-python -m venv .venv
 # Windows
 .venv\Scripts\activate
 # Mac/Linux
 source .venv/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt
-# (Ensure langgraph, langchain-google-genai, fastapi, uvicorn, firebase-admin are installed)
+uv sync
 
 # Environment Variables
 # Create a .env file in backend/
@@ -70,7 +67,7 @@ uvicorn main:app --reload --port 8000
 cd frontend
 
 # Install dependencies
-npm install
+pnpm install
 
 # Environment Variables
 # Create .env.local if needed (e.g. for client-side firebase config)
@@ -78,7 +75,7 @@ npm install
 
 **Run the Frontend:**
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
