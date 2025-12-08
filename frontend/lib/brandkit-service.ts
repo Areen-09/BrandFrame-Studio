@@ -74,11 +74,79 @@ export const getUserBrandKits = async (userId: string) => {
         const snapshot = await getDocs(q);
 
         return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
+            ...doc.data(),
+            id: doc.id
         })) as BrandKitData[];
     } catch (error) {
         console.error("Error fetching brand kits:", error);
         return [];
+    }
+};
+
+export const getBrandKit = async (userId: string, brandKitId: string) => {
+    try {
+        const { doc, getDoc } = await import('firebase/firestore');
+        const docRef = doc(db, 'users', userId, 'brandkits', brandKitId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return {
+                id: docSnap.id,
+                ...docSnap.data()
+            } as BrandKitData;
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error("Error fetching brand kit:", error);
+        throw error;
+    }
+};
+
+export const updateBrandKit = async (userId: string, brandKitId: string, data: Partial<BrandKitData>, logo: File | null, assets: File[]) => {
+    try {
+        const { updateDoc, doc } = await import('firebase/firestore');
+
+        // 1. Upload Logo if new one provided
+        let logoUrl = data.logoUrl;
+        if (logo) {
+            logoUrl = await uploadBrandKitAsset(logo, userId, brandKitId, 'logo');
+        }
+
+        // 2. Upload new Assets
+        let assetUrls = data.assetUrls || [];
+        if (assets && assets.length > 0) {
+            for (const asset of assets) {
+                const url = await uploadBrandKitAsset(asset, userId, brandKitId, 'asset');
+                assetUrls.push(url);
+            }
+        }
+
+        // 3. Update Firestore
+        const updateData = {
+            ...data,
+            logoUrl,
+            assetUrls,
+        };
+        // Remove undefined fields
+        Object.keys(updateData).forEach(key => updateData[key as keyof typeof updateData] === undefined && delete updateData[key as keyof typeof updateData]);
+
+        await updateDoc(doc(db, 'users', userId, 'brandkits', brandKitId), updateData);
+
+        return brandKitId;
+    } catch (error) {
+        console.error("Error updating brand kit:", error);
+        throw error;
+    }
+};
+
+export const deleteBrandKit = async (userId: string, brandKitId: string) => {
+    try {
+        const { deleteDoc, doc } = await import('firebase/firestore');
+        await deleteDoc(doc(db, 'users', userId, 'brandkits', brandKitId));
+        return true;
+    } catch (error) {
+        console.error("Error deleting brand kit:", error);
+        throw error;
     }
 };

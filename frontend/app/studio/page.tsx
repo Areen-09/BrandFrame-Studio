@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { Plus, Settings, LogOut, Search, MoreVertical, Grid2X2Plus, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Settings, LogOut, Search, MoreVertical, Grid2X2Plus, Loader2, Trash2, Pencil } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useAuth } from '@/context/auth-context';
-import { getUserBrandKits, BrandKitData } from '@/lib/brandkit-service';
+import { getUserBrandKits, deleteBrandKit, BrandKitData } from '@/lib/brandkit-service';
 
 export default function StudioPage() {
     const router = useRouter();
@@ -16,6 +16,8 @@ export default function StudioPage() {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [brandKits, setBrandKits] = useState<BrandKitData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const fetchBrandKits = async () => {
@@ -28,7 +30,18 @@ export default function StudioPage() {
         fetchBrandKits();
     }, [user]);
 
-    // ... existing signout logic
+    // Close menu when clicking outside - but only if not clicking inside the menu
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setActiveMenuId(null);
+            }
+        };
+        // Use capture phase to get the event before React's synthetic events
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const handleSignOut = async () => {
         try {
             await signOut(auth);
@@ -67,10 +80,10 @@ export default function StudioPage() {
                                 </button>
 
                                 {isSettingsOpen && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-zinc-200 dark:border-zinc-800 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-800 rounded-lg shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
                                         <button
                                             onClick={handleSignOut}
-                                            className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2"
+                                            className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2 transition-colors"
                                         >
                                             <LogOut className="w-4 h-4" />
                                             Sign out
@@ -103,12 +116,12 @@ export default function StudioPage() {
                     {/* Create New Card */}
                     <Link
                         href="/brandkit/new"
-                        className="group relative flex flex-col items-center justify-center h-64 rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-900 dark:hover:border-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all cursor-pointer"
+                        className="group relative flex flex-col items-center justify-center h-64 rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-500 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 transition-all cursor-pointer"
                     >
-                        <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <Plus className="w-6 h-6 text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white" />
+                        <div className="h-12 w-12 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <Plus className="w-6 h-6 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200" />
                         </div>
-                        <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white">Create New BrandKit</span>
+                        <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200">Create New BrandKit</span>
                     </Link>
 
                     {/* Existing BrandKits */}
@@ -122,43 +135,95 @@ export default function StudioPage() {
                         </div>
                     ) : (
                         brandKits.map((kit) => (
-                            <Link
-                                href={`/editor/${kit.id}`}
+                            <div
                                 key={kit.id}
-                                className="group relative flex flex-col h-64 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:shadow-lg transition-all overflow-hidden cursor-pointer"
+                                className="group relative flex flex-col h-64 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:shadow-lg transition-all"
                             >
-                                {/* Preview Area (Color Splashes) */}
-                                <div className="flex-1 p-6 relative bg-zinc-50 dark:bg-zinc-800/50">
-                                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md" onClick={(e) => e.preventDefault()}>
-                                            <MoreVertical className="w-4 h-4 text-zinc-500" />
-                                        </button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 h-full content-center justify-center">
-                                        {/* Try to show logo if available, else colors */}
-                                        {kit.logoUrl ? (
-                                            <img src={kit.logoUrl} alt={kit.name} className="h-16 w-16 object-contain mb-2" />
-                                        ) : null}
-                                        <div className="flex gap-2 justify-center w-full">
-                                            {kit.colors.map((color, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="w-8 h-8 rounded-full shadow-sm border border-black/5 dark:border-white/5"
-                                                    style={{ backgroundColor: color }}
-                                                />
-                                            ))}
+                                {/* Main Clickable Area */}
+                                <div
+                                    onClick={() => router.push(`/editor/${kit.id}`)}
+                                    className="flex flex-col h-full w-full rounded-xl overflow-hidden cursor-pointer"
+                                >
+                                    {/* Preview Area (Color Splashes) */}
+                                    <div className="flex-1 p-6 relative bg-zinc-50 dark:bg-zinc-800/50">
+                                        <div className="flex flex-wrap gap-2 h-full content-center justify-center">
+                                            {/* Try to show logo if available, else colors */}
+                                            {kit.logoUrl ? (
+                                                <img src={kit.logoUrl} alt={kit.name} className="h-16 w-16 object-contain mb-2" />
+                                            ) : null}
+                                            <div className="flex gap-2 justify-center w-full">
+                                                {kit.colors.map((color, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className="w-8 h-8 rounded-full shadow-sm border border-black/5 dark:border-white/5"
+                                                        style={{ backgroundColor: color }}
+                                                    />
+                                                ))}
+                                            </div>
                                         </div>
+                                    </div>
+
+                                    {/* Footer Info */}
+                                    <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                                        <h3 className="font-semibold text-zinc-900 dark:text-white truncate">{kit.name}</h3>
+                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                                            {kit.createdAt ? new Date(kit.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
+                                        </p>
                                     </div>
                                 </div>
 
-                                {/* Footer Info */}
-                                <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                                    <h3 className="font-semibold text-zinc-900 dark:text-white truncate">{kit.name}</h3>
-                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                                        {kit.createdAt ? new Date(kit.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}
-                                    </p>
+                                {/* Menu Button (Absolute positioned on top) */}
+                                <div
+                                    ref={activeMenuId === kit.id ? menuRef : null}
+                                    className={`absolute top-4 right-4 z-20 transition-opacity ${activeMenuId === kit.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                                >
+                                    <button
+                                        className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-md bg-white/50 dark:bg-black/50 backdrop-blur-sm shadow-sm border border-black/5 dark:border-white/10 cursor-pointer"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            if (kit.id) {
+                                                setActiveMenuId(activeMenuId === kit.id ? null : kit.id);
+                                            }
+                                        }}
+                                    >
+                                        <MoreVertical className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />
+                                    </button>
+
+                                    {activeMenuId === kit.id && (
+                                        <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-zinc-800 rounded-lg shadow-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-100 text-left">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    router.push(`/brandkit/edit/${kit.id}`);
+                                                }}
+                                                className="w-full text-left px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors flex items-center gap-2"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    if (user && kit.id && confirm('Are you sure you want to delete this BrandKit?')) {
+                                                        try {
+                                                            await deleteBrandKit(user.uid, kit.id);
+                                                            setBrandKits(brandKits.filter(k => k.id !== kit.id));
+                                                            setActiveMenuId(null);
+                                                        } catch (error) {
+                                                            console.error('Failed to delete brandkit', error);
+                                                        }
+                                                    }
+                                                }}
+                                                className="w-full text-left px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors flex items-center gap-2"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                                Delete
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            </Link>
+                            </div>
                         ))
                     )}
                 </div>

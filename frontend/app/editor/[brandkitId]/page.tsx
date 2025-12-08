@@ -1,15 +1,18 @@
 'use client';
 
-import { useRef, useState, use } from 'react';
+import { useRef, useState, use, useCallback } from 'react';
 import Link from 'next/link';
 import {
-    ArrowLeft, Type, Image as ImageIcon, Square, Circle as CircleIcon,
-    Download, Moon, Sun, Monitor, Smartphone, Layout, Wand2, Loader2
+    ArrowLeft, Type, Image as ImageIcon, Shapes,
+    Download, Monitor, Smartphone, Layout, Wand2
 } from 'lucide-react';
-import FabricCanvas, { FabricCanvasHandle } from '@/components/FabricCanvas';
+import FabricCanvas, { FabricCanvasHandle, TextProperties, ShapeProperties } from '@/components/FabricCanvas';
+import TextOptionsPanel from '@/components/TextOptionsPanel';
+import ShapesOptionsPanel from '@/components/ShapesOptionsPanel';
 import ThemeToggle from '@/components/ThemeToggle';
 import { generateCreative, CreativeRequest } from '@/lib/api';
 import { useAuth } from '@/context/auth-context';
+import { FabricObject } from 'fabric';
 
 // Aspect Ratios
 const FORMATS = [
@@ -27,8 +30,102 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
     const [currentFormat, setCurrentFormat] = useState(FORMATS[0]);
     const [isGenerating, setIsGenerating] = useState(false);
 
+    // Text state
+    const [isTextSelected, setIsTextSelected] = useState(false);
+    const [textProperties, setTextProperties] = useState<TextProperties | null>(null);
+
+    // Shape state
+    const [isShapeSelected, setIsShapeSelected] = useState(false);
+    const [shapeProperties, setShapeProperties] = useState<ShapeProperties | null>(null);
+    const [showShapesPicker, setShowShapesPicker] = useState(false);
+
     // Scale factor for display (since 1080px is too big for screen)
     const displayScale = 0.4;
+
+    const handleSelectionChange = useCallback((selectedObject: FabricObject | null, isText: boolean, isShape: boolean) => {
+        setIsTextSelected(isText);
+        setIsShapeSelected(isShape);
+
+        // Close shape picker when something is selected
+        if (selectedObject) {
+            setShowShapesPicker(false);
+        }
+
+        if (isText && canvasRef.current) {
+            const props = canvasRef.current.getSelectedTextProperties();
+            setTextProperties(props);
+            setShapeProperties(null);
+        } else if (isShape && canvasRef.current) {
+            const props = canvasRef.current.getSelectedShapeProperties();
+            setShapeProperties(props);
+            setTextProperties(null);
+        } else {
+            setTextProperties(null);
+            setShapeProperties(null);
+        }
+    }, []);
+
+    const handleTextPropertyChange = useCallback((property: string, value: any) => {
+        if (canvasRef.current) {
+            canvasRef.current.updateTextProperty(property, value);
+            const props = canvasRef.current.getSelectedTextProperties();
+            setTextProperties(props);
+        }
+    }, []);
+
+    const handleShapePropertyChange = useCallback((property: string, value: any) => {
+        if (canvasRef.current) {
+            canvasRef.current.updateShapeProperty(property, value);
+            const props = canvasRef.current.getSelectedShapeProperties();
+            setShapeProperties(props);
+        }
+    }, []);
+
+    const handleDeleteSelected = useCallback(() => {
+        if (canvasRef.current) {
+            canvasRef.current.deleteSelected();
+            setIsTextSelected(false);
+            setIsShapeSelected(false);
+            setTextProperties(null);
+            setShapeProperties(null);
+        }
+    }, []);
+
+    const handleAddShape = useCallback((shapeType: string) => {
+        if (!canvasRef.current) return;
+
+        switch (shapeType) {
+            case 'rect':
+                canvasRef.current.addRect();
+                break;
+            case 'circle':
+                canvasRef.current.addCircle();
+                break;
+            case 'triangle':
+                canvasRef.current.addTriangle();
+                break;
+            case 'star':
+                canvasRef.current.addStar();
+                break;
+            case 'pentagon':
+                canvasRef.current.addPolygon(5);
+                break;
+            case 'hexagon':
+                canvasRef.current.addPolygon(6);
+                break;
+            case 'line':
+                canvasRef.current.addLine();
+                break;
+            case 'arrow':
+                canvasRef.current.addArrow();
+                break;
+            case 'curved':
+                canvasRef.current.addCurvedLine();
+                break;
+        }
+
+        setShowShapesPicker(false);
+    }, []);
 
     const handleFormatChange = (format: typeof FORMATS[0]) => {
         setCurrentFormat(format);
@@ -63,8 +160,6 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             const response = await generateCreative(request);
 
             if (response.image_url) {
-                // Add the generated image to the canvas
-                // We use a proxy or cross-origin safe method if needed, but for now direct URL
                 canvasRef.current?.addImage(response.image_url);
             } else {
                 alert("Failed to generate image. Please try again.");
@@ -74,6 +169,19 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             alert("Error generating creative.");
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const handleShapesClick = () => {
+        setShowShapesPicker(!showShapesPicker);
+        // Clear any selection when opening picker
+        if (!showShapesPicker) {
+            canvasRef.current?.canvas?.discardActiveObject();
+            canvasRef.current?.canvas?.requestRenderAll();
+            setIsTextSelected(false);
+            setIsShapeSelected(false);
+            setTextProperties(null);
+            setShapeProperties(null);
         }
     };
 
@@ -131,7 +239,6 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
                     <ToolButton icon={Wand2} label={isGenerating ? "Generating..." : "Generate AI"} onClick={handleGenerateAI} disabled={isGenerating} />
 
                     <ToolButton icon={Layout} label="Templates" onClick={() => {
-                        // Mock loading a template
                         const template = {
                             objects: [
                                 { type: 'rect', left: 50, top: 50, width: 200, height: 200, fill: '#ff4444' },
@@ -142,9 +249,13 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
                         canvasRef.current?.loadFromJSON(template);
                     }} />
                     <ToolButton icon={Type} label="Text" onClick={() => canvasRef.current?.addText('Double click to edit')} />
-                    <ToolButton icon={ImageIcon} label="Image" onClick={() => canvasRef.current?.addImage('https://source.unsplash.com/random/400x400')} />
-                    <ToolButton icon={Square} label="Rect" onClick={() => canvasRef.current?.addRect()} />
-                    <ToolButton icon={CircleIcon} label="Circle" onClick={() => canvasRef.current?.addCircle()} />
+                    <ToolButton icon={ImageIcon} label="Assets" onClick={() => canvasRef.current?.addImage('https://source.unsplash.com/random/400x400')} />
+                    <ToolButton
+                        icon={Shapes}
+                        label="Shapes"
+                        onClick={handleShapesClick}
+                        active={showShapesPicker}
+                    />
                 </aside>
 
                 {/* Canvas Area */}
@@ -152,16 +263,44 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
                     <div
                         className="shadow-2xl transition-all duration-300 origin-center"
                         style={{
-                            transform: `scale(${displayScale})`, // Scale for display only
-                            // Use a wrapper to handle 'centering' visually 
+                            transform: `scale(${displayScale})`,
                         }}
                     >
                         <FabricCanvas
                             ref={canvasRef}
                             width={currentFormat.width}
                             height={currentFormat.height}
+                            onSelectionChange={handleSelectionChange}
                         />
                     </div>
+
+                    {/* Text Options Panel */}
+                    {isTextSelected && textProperties && (
+                        <TextOptionsPanel
+                            textProperties={textProperties}
+                            onPropertyChange={handleTextPropertyChange}
+                            onDelete={handleDeleteSelected}
+                        />
+                    )}
+
+                    {/* Shape Picker Panel */}
+                    {showShapesPicker && !isShapeSelected && (
+                        <ShapesOptionsPanel
+                            mode="picker"
+                            onAddShape={handleAddShape}
+                        />
+                    )}
+
+                    {/* Shape Editor Panel */}
+                    {isShapeSelected && shapeProperties && (
+                        <ShapesOptionsPanel
+                            mode="editor"
+                            shapeProperties={shapeProperties}
+                            onAddShape={handleAddShape}
+                            onPropertyChange={handleShapePropertyChange}
+                            onDelete={handleDeleteSelected}
+                        />
+                    )}
 
                     {/* Zoom Info overlay */}
                     <div className="absolute bottom-6 right-6 bg-black/70 text-white text-xs px-3 py-1 rounded-full backdrop-blur-md">
@@ -173,17 +312,25 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
     );
 }
 
-function ToolButton({ icon: Icon, label, onClick, disabled }: { icon: any, label: string, onClick: () => void, disabled?: boolean }) {
+function ToolButton({ icon: Icon, label, onClick, disabled, active }: { icon: any, label: string, onClick: () => void, disabled?: boolean, active?: boolean }) {
     return (
         <button
             onClick={onClick}
             disabled={disabled}
             className={`flex flex-col items-center gap-1 group w-full ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-            <div className={`w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center ${!disabled && 'group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700'} transition-colors`}>
-                <Icon className={`w-5 h-5 text-zinc-600 dark:text-zinc-400 ${!disabled && 'group-hover:text-zinc-900 dark:group-hover:text-white'}`} />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${active
+                    ? 'bg-zinc-900 dark:bg-zinc-100'
+                    : 'bg-zinc-100 dark:bg-zinc-800'
+                } ${!disabled && !active && 'group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700'}`}>
+                <Icon className={`w-5 h-5 ${active
+                        ? 'text-white dark:text-zinc-900'
+                        : 'text-zinc-600 dark:text-zinc-400'
+                    } ${!disabled && !active && 'group-hover:text-zinc-900 dark:group-hover:text-white'}`} />
             </div>
             <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 text-center leading-tight">{label}</span>
         </button>
     );
 }
+
+

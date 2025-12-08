@@ -1,169 +1,437 @@
 'use client';
 
-import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Canvas, Rect, Textbox, Circle, FabricImage } from 'fabric';
+import { useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { Canvas, Rect, Textbox, Circle, FabricImage, FabricObject, Triangle, Polygon, Line, Path } from 'fabric';
+
+export interface TextProperties {
+    fontFamily: string;
+    fontSize: number;
+    fill: string;
+    fontWeight: string;
+    fontStyle: string;
+    underline: boolean;
+    textAlign: string;
+    lineHeight: number;
+    charSpacing: number;
+}
+
+export interface ShapeProperties {
+    fill: string;
+    stroke: string;
+    strokeWidth: number;
+    opacity: number;
+    rx?: number; // border radius for rectangles
+    ry?: number;
+}
+
+export type ShapeType = 'rect' | 'circle' | 'triangle' | 'star' | 'pentagon' | 'hexagon' | 'line' | 'arrow' | 'curved-line';
 
 export interface FabricCanvasHandle {
     addText: (text: string, options?: any) => void;
     addImage: (url: string) => void;
-    addRect: () => void;
-    addCircle: () => void;
+    addRect: (options?: any) => void;
+    addCircle: (options?: any) => void;
+    addTriangle: (options?: any) => void;
+    addStar: (options?: any) => void;
+    addPolygon: (sides: number, options?: any) => void;
+    addLine: (options?: any) => void;
+    addArrow: (options?: any) => void;
+    addCurvedLine: (options?: any) => void;
     exportAsImage: (format?: 'png' | 'jpeg') => string;
     resizeCanvas: (width: number, height: number) => void;
     setCanvasBackground: (color: string) => void;
     loadFromJSON: (json: any) => void;
     clearCanvas: () => void;
     canvas: Canvas | null;
+    // Text formatting methods
+    updateTextProperty: (property: string, value: any) => void;
+    getSelectedTextProperties: () => TextProperties | null;
+    // Shape formatting methods
+    updateShapeProperty: (property: string, value: any) => void;
+    getSelectedShapeProperties: () => ShapeProperties | null;
+    deleteSelected: () => void;
 }
 
 interface FabricCanvasProps {
     width: number;
     height: number;
     backgroundColor?: string;
+    onSelectionChange?: (selectedObject: FabricObject | null, isText: boolean, isShape: boolean) => void;
 }
 
-const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(({ width, height, backgroundColor = '#ffffff' }, ref) => {
-    const canvasEl = useRef<HTMLCanvasElement>(null);
-    const fabricCanvas = useRef<Canvas | null>(null);
+// Helper to check if object is a shape (not text or image)
+const isShapeObject = (obj: FabricObject | null): boolean => {
+    if (!obj) return false;
+    return obj instanceof Rect || obj instanceof Circle || obj instanceof Triangle ||
+        obj instanceof Polygon || obj instanceof Line || obj instanceof Path;
+};
 
-    useEffect(() => {
-        if (!canvasEl.current) return;
-
-        // Initialize Fabric Canvas
-        const canvas = new Canvas(canvasEl.current, {
-            width,
-            height,
-            backgroundColor,
-            selection: true,
-            preserveObjectStacking: true,
+// Helper to create star polygon points
+const createStarPoints = (outerRadius: number, innerRadius: number, points: number = 5): { x: number; y: number }[] => {
+    const result = [];
+    const step = Math.PI / points;
+    for (let i = 0; i < 2 * points; i++) {
+        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+        const angle = i * step - Math.PI / 2;
+        result.push({
+            x: radius * Math.cos(angle),
+            y: radius * Math.sin(angle)
         });
+    }
+    return result;
+};
 
-        fabricCanvas.current = canvas;
+// Helper to create regular polygon points
+const createPolygonPoints = (radius: number, sides: number): { x: number; y: number }[] => {
+    const result = [];
+    const angle = (2 * Math.PI) / sides;
+    for (let i = 0; i < sides; i++) {
+        result.push({
+            x: radius * Math.cos(i * angle - Math.PI / 2),
+            y: radius * Math.sin(i * angle - Math.PI / 2)
+        });
+    }
+    return result;
+};
 
-        return () => {
-            canvas.dispose();
-            fabricCanvas.current = null;
-        };
-    }, []); // Run once on mount
+const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
+    ({ width, height, backgroundColor = '#ffffff', onSelectionChange }, ref) => {
+        const canvasEl = useRef<HTMLCanvasElement>(null);
+        const fabricCanvas = useRef<Canvas | null>(null);
 
-    // Handle prop updates
-    useEffect(() => {
-        if (fabricCanvas.current) {
-            // We handle resizing via imperative handle mainly, but this catches props
-            // fabricCanvas.current.setDimensions({ width, height });
-            // fabricCanvas.current.backgroundColor = backgroundColor;
-            // fabricCanvas.current.requestRenderAll();
-        }
-    }, [width, height, backgroundColor]);
+        const handleSelectionChange = useCallback(() => {
+            if (!fabricCanvas.current || !onSelectionChange) return;
+            const activeObject = fabricCanvas.current.getActiveObject();
+            const isText = activeObject instanceof Textbox;
+            const isShape = isShapeObject(activeObject ?? null);
+            onSelectionChange(activeObject ?? null, isText, isShape);
+        }, [onSelectionChange]);
 
-    useImperativeHandle(ref, () => ({
-        canvas: fabricCanvas.current,
+        useEffect(() => {
+            if (!canvasEl.current) return;
 
-        resizeCanvas: (w, h) => {
-            if (fabricCanvas.current) {
-                fabricCanvas.current.setDimensions({ width: w, height: h });
-                fabricCanvas.current.requestRenderAll();
-            }
-        },
+            // Initialize Fabric Canvas
+            const canvas = new Canvas(canvasEl.current, {
+                width,
+                height,
+                backgroundColor,
+                selection: true,
+                preserveObjectStacking: true,
+            });
 
-        setCanvasBackground: (color) => {
-            if (fabricCanvas.current) {
-                fabricCanvas.current.backgroundColor = color;
-                fabricCanvas.current.requestRenderAll();
-            }
-        },
+            fabricCanvas.current = canvas;
 
-        loadFromJSON: (json) => {
-            if (fabricCanvas.current) {
-                fabricCanvas.current.loadFromJSON(json).then(() => {
-                    fabricCanvas.current?.requestRenderAll();
-                });
-            }
-        },
-
-        addText: (text, options = {}) => {
-            if (fabricCanvas.current) {
-                const textbox = new Textbox(text, {
-                    left: 50,
-                    top: 50,
-                    fontFamily: 'sans-serif',
-                    fontSize: 24,
-                    fill: '#000000',
-                    ...options
-                });
-                fabricCanvas.current.add(textbox);
-                fabricCanvas.current.setActiveObject(textbox);
-            }
-        },
-
-        addImage: async (url) => {
-            if (fabricCanvas.current) {
-                try {
-                    const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
-
-                    if (img.width && img.width > width / 2) {
-                        img.scaleToWidth(width / 2);
-                    }
-
-                    fabricCanvas.current.add(img);
-                    fabricCanvas.current.centerObject(img);
-                    fabricCanvas.current.setActiveObject(img);
-                } catch (error) {
-                    console.error('Failed to load image:', error);
+            // Add selection event listeners
+            canvas.on('selection:created', handleSelectionChange);
+            canvas.on('selection:updated', handleSelectionChange);
+            canvas.on('selection:cleared', () => {
+                if (onSelectionChange) {
+                    onSelectionChange(null, false, false);
                 }
-            }
-        },
+            });
 
-        addRect: () => {
+            return () => {
+                canvas.off('selection:created', handleSelectionChange);
+                canvas.off('selection:updated', handleSelectionChange);
+                canvas.off('selection:cleared');
+                canvas.dispose();
+                fabricCanvas.current = null;
+            };
+        }, []); // Run once on mount
+
+        // Handle prop updates
+        useEffect(() => {
             if (fabricCanvas.current) {
-                const rect = new Rect({
-                    left: 100,
-                    top: 100,
-                    fill: '#ff0000',
-                    width: 100,
-                    height: 100
-                });
-                fabricCanvas.current.add(rect);
-                fabricCanvas.current.setActiveObject(rect);
+                // We handle resizing via imperative handle mainly, but this catches props
             }
-        },
+        }, [width, height, backgroundColor]);
 
-        addCircle: () => {
-            if (fabricCanvas.current) {
-                const circle = new Circle({
-                    left: 100,
-                    top: 100,
-                    radius: 50,
-                    fill: '#00ff00'
-                });
-                fabricCanvas.current.add(circle);
-                fabricCanvas.current.setActiveObject(circle);
-            }
-        },
+        useImperativeHandle(ref, () => ({
+            canvas: fabricCanvas.current,
 
-        clearCanvas: () => {
-            if (fabricCanvas.current) {
-                fabricCanvas.current.clear();
-                fabricCanvas.current.backgroundColor = backgroundColor;
-                fabricCanvas.current.requestRenderAll();
-            }
-        },
+            resizeCanvas: (w, h) => {
+                if (fabricCanvas.current) {
+                    fabricCanvas.current.setDimensions({ width: w, height: h });
+                    fabricCanvas.current.requestRenderAll();
+                }
+            },
 
-        exportAsImage: (format = 'png') => {
-            if (fabricCanvas.current) {
-                return fabricCanvas.current.toDataURL({
-                    format,
-                    quality: 1,
-                    multiplier: 1,
-                });
-            }
-            return '';
-        },
-    }));
+            setCanvasBackground: (color) => {
+                if (fabricCanvas.current) {
+                    fabricCanvas.current.backgroundColor = color;
+                    fabricCanvas.current.requestRenderAll();
+                }
+            },
 
-    return <canvas ref={canvasEl} />;
-});
+            loadFromJSON: (json) => {
+                if (fabricCanvas.current) {
+                    fabricCanvas.current.loadFromJSON(json).then(() => {
+                        fabricCanvas.current?.requestRenderAll();
+                    });
+                }
+            },
+
+            addText: (text, options = {}) => {
+                if (fabricCanvas.current) {
+                    const textbox = new Textbox(text, {
+                        left: 50,
+                        top: 50,
+                        fontFamily: 'Inter',
+                        fontSize: 24,
+                        fill: '#000000',
+                        ...options
+                    });
+                    fabricCanvas.current.add(textbox);
+                    fabricCanvas.current.setActiveObject(textbox);
+                    handleSelectionChange();
+                }
+            },
+
+            addImage: async (url) => {
+                if (fabricCanvas.current) {
+                    try {
+                        const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
+
+                        if (img.width && img.width > width / 2) {
+                            img.scaleToWidth(width / 2);
+                        }
+
+                        fabricCanvas.current.add(img);
+                        fabricCanvas.current.centerObject(img);
+                        fabricCanvas.current.setActiveObject(img);
+                    } catch (error) {
+                        console.error('Failed to load image:', error);
+                    }
+                }
+            },
+
+            addRect: (options = {}) => {
+                if (fabricCanvas.current) {
+                    const rect = new Rect({
+                        left: 100,
+                        top: 100,
+                        fill: '#3b82f6',
+                        stroke: '#1d4ed8',
+                        strokeWidth: 2,
+                        width: 100,
+                        height: 100,
+                        rx: 0,
+                        ry: 0,
+                        ...options
+                    });
+                    fabricCanvas.current.add(rect);
+                    fabricCanvas.current.setActiveObject(rect);
+                    handleSelectionChange();
+                }
+            },
+
+            addCircle: (options = {}) => {
+                if (fabricCanvas.current) {
+                    const circle = new Circle({
+                        left: 100,
+                        top: 100,
+                        radius: 50,
+                        fill: '#22c55e',
+                        stroke: '#15803d',
+                        strokeWidth: 2,
+                        ...options
+                    });
+                    fabricCanvas.current.add(circle);
+                    fabricCanvas.current.setActiveObject(circle);
+                    handleSelectionChange();
+                }
+            },
+
+            addTriangle: (options = {}) => {
+                if (fabricCanvas.current) {
+                    const triangle = new Triangle({
+                        left: 100,
+                        top: 100,
+                        width: 100,
+                        height: 100,
+                        fill: '#f59e0b',
+                        stroke: '#b45309',
+                        strokeWidth: 2,
+                        ...options
+                    });
+                    fabricCanvas.current.add(triangle);
+                    fabricCanvas.current.setActiveObject(triangle);
+                    handleSelectionChange();
+                }
+            },
+
+            addStar: (options = {}) => {
+                if (fabricCanvas.current) {
+                    const points = createStarPoints(50, 25, 5);
+                    const star = new Polygon(points, {
+                        left: 100,
+                        top: 100,
+                        fill: '#eab308',
+                        stroke: '#a16207',
+                        strokeWidth: 2,
+                        ...options
+                    });
+                    fabricCanvas.current.add(star);
+                    fabricCanvas.current.setActiveObject(star);
+                    handleSelectionChange();
+                }
+            },
+
+            addPolygon: (sides: number, options = {}) => {
+                if (fabricCanvas.current) {
+                    const points = createPolygonPoints(50, sides);
+                    const polygon = new Polygon(points, {
+                        left: 100,
+                        top: 100,
+                        fill: '#8b5cf6',
+                        stroke: '#6d28d9',
+                        strokeWidth: 2,
+                        ...options
+                    });
+                    fabricCanvas.current.add(polygon);
+                    fabricCanvas.current.setActiveObject(polygon);
+                    handleSelectionChange();
+                }
+            },
+
+            addLine: (options = {}) => {
+                if (fabricCanvas.current) {
+                    const line = new Line([50, 100, 200, 100], {
+                        stroke: '#000000',
+                        strokeWidth: 3,
+                        ...options
+                    });
+                    fabricCanvas.current.add(line);
+                    fabricCanvas.current.setActiveObject(line);
+                    handleSelectionChange();
+                }
+            },
+
+            addArrow: (options = {}) => {
+                if (fabricCanvas.current) {
+                    // Create an arrow using a path
+                    const arrow = new Path('M 0 0 L 100 0 L 85 -10 M 100 0 L 85 10', {
+                        left: 100,
+                        top: 100,
+                        stroke: '#000000',
+                        strokeWidth: 3,
+                        fill: 'transparent',
+                        ...options
+                    });
+                    fabricCanvas.current.add(arrow);
+                    fabricCanvas.current.setActiveObject(arrow);
+                    handleSelectionChange();
+                }
+            },
+
+            addCurvedLine: (options = {}) => {
+                if (fabricCanvas.current) {
+                    // Create a curved line using a quadratic bezier path
+                    const curved = new Path('M 0 50 Q 75 0 150 50', {
+                        left: 100,
+                        top: 100,
+                        stroke: '#000000',
+                        strokeWidth: 3,
+                        fill: 'transparent',
+                        ...options
+                    });
+                    fabricCanvas.current.add(curved);
+                    fabricCanvas.current.setActiveObject(curved);
+                    handleSelectionChange();
+                }
+            },
+
+            clearCanvas: () => {
+                if (fabricCanvas.current) {
+                    fabricCanvas.current.clear();
+                    fabricCanvas.current.backgroundColor = backgroundColor;
+                    fabricCanvas.current.requestRenderAll();
+                }
+            },
+
+            exportAsImage: (format = 'png') => {
+                if (fabricCanvas.current) {
+                    return fabricCanvas.current.toDataURL({
+                        format,
+                        quality: 1,
+                        multiplier: 1,
+                    });
+                }
+                return '';
+            },
+
+            // Text formatting methods
+            updateTextProperty: (property: string, value: any) => {
+                if (!fabricCanvas.current) return;
+                const activeObject = fabricCanvas.current.getActiveObject();
+                if (activeObject && activeObject instanceof Textbox) {
+                    activeObject.set(property as keyof Textbox, value);
+                    fabricCanvas.current.requestRenderAll();
+                }
+            },
+
+            getSelectedTextProperties: (): TextProperties | null => {
+                if (!fabricCanvas.current) return null;
+                const activeObject = fabricCanvas.current.getActiveObject();
+                if (activeObject && activeObject instanceof Textbox) {
+                    return {
+                        fontFamily: activeObject.fontFamily || 'Inter',
+                        fontSize: activeObject.fontSize || 24,
+                        fill: (activeObject.fill as string) || '#000000',
+                        fontWeight: (activeObject.fontWeight as string) || 'normal',
+                        fontStyle: activeObject.fontStyle || 'normal',
+                        underline: activeObject.underline || false,
+                        textAlign: activeObject.textAlign || 'left',
+                        lineHeight: activeObject.lineHeight || 1.16,
+                        charSpacing: activeObject.charSpacing || 0,
+                    };
+                }
+                return null;
+            },
+
+            // Shape formatting methods
+            updateShapeProperty: (property: string, value: any) => {
+                if (!fabricCanvas.current) return;
+                const activeObject = fabricCanvas.current.getActiveObject();
+                if (activeObject && isShapeObject(activeObject)) {
+                    activeObject.set(property as any, value);
+                    fabricCanvas.current.requestRenderAll();
+                }
+            },
+
+            getSelectedShapeProperties: (): ShapeProperties | null => {
+                if (!fabricCanvas.current) return null;
+                const activeObject = fabricCanvas.current.getActiveObject();
+                if (activeObject && isShapeObject(activeObject)) {
+                    const rect = activeObject as Rect;
+                    return {
+                        fill: (activeObject.fill as string) || '#3b82f6',
+                        stroke: (activeObject.stroke as string) || '#000000',
+                        strokeWidth: activeObject.strokeWidth || 0,
+                        opacity: activeObject.opacity || 1,
+                        rx: rect.rx || 0,
+                        ry: rect.ry || 0,
+                    };
+                }
+                return null;
+            },
+
+            deleteSelected: () => {
+                if (!fabricCanvas.current) return;
+                const activeObject = fabricCanvas.current.getActiveObject();
+                if (activeObject) {
+                    fabricCanvas.current.remove(activeObject);
+                    fabricCanvas.current.requestRenderAll();
+                }
+            },
+        }));
+
+        return <canvas ref={canvasEl} />;
+    }
+);
 
 FabricCanvas.displayName = 'FabricCanvas';
 
 export default FabricCanvas;
+
+
