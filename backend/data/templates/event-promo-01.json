@@ -1,0 +1,240 @@
+{
+    "id": "event-promo-01",
+    "name": "Event Announcement",
+    "description": "Announce events, launches, or special occasions",
+    "category": "event",
+    "formats": {
+        "facebook": {
+            "width": 1200,
+            "height": 630,
+            "background": "{{colors.primary}}",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "overlay",
+                    "left": 0,
+                    "top": 0,
+                    "width": 1200,
+                    "height": 630,
+                    "fill": "rgba(0,0,0,0.3)"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 540,
+                    "top": 40,
+                    "scaleToWidth": 120
+                },
+                {
+                    "type": "text",
+                    "role": "event_label",
+                    "content": "{{generated_event_label}}",
+                    "prompt": "Write an event label like 'EXCLUSIVE EVENT' or 'SPECIAL LAUNCH', 2 words max",
+                    "left": 600,
+                    "top": 200,
+                    "fontSize": 28,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "role": "headline",
+                    "content": "{{generated_headline}}",
+                    "prompt": "Write an event headline, 3-4 words like 'GRAND OPENING SALE' or 'SUMMER LAUNCH EVENT'",
+                    "left": 600,
+                    "top": 260,
+                    "fontSize": 72,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "role": "date",
+                    "content": "{{generated_date}}",
+                    "prompt": "Write a sample event date like 'December 15-20' or 'This Weekend Only'",
+                    "left": 600,
+                    "top": 380,
+                    "fontSize": 36,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "prompt": "Write a call-to-action like 'Register Now' or 'Mark Your Calendar', max 3 words",
+                    "left": 600,
+                    "top": 500,
+                    "fontSize": 32,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}",
+                    "textAlign": "center",
+                    "originX": "center"
+                }
+            ]
+        },
+        "instagram_post": {
+            "width": 1080,
+            "height": 1080,
+            "background": "{{colors.primary}}",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "overlay",
+                    "left": 0,
+                    "top": 0,
+                    "width": 1080,
+                    "height": 1080,
+                    "fill": "rgba(0,0,0,0.3)"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 490,
+                    "top": 80,
+                    "scaleToWidth": 100
+                },
+                {
+                    "type": "text",
+                    "role": "event_label",
+                    "content": "{{generated_event_label}}",
+                    "left": 540,
+                    "top": 350,
+                    "fontSize": 28,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "role": "headline",
+                    "content": "{{generated_headline}}",
+                    "left": 540,
+                    "top": 420,
+                    "fontSize": 72,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "role": "date",
+                    "content": "{{generated_date}}",
+                    "left": 540,
+                    "top": 600,
+                    "fontSize": 36,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "left": 540,
+                    "top": 900,
+                    "fontSize": 32,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}",
+                    "textAlign": "center",
+                    "originX": "center"
+                }
+            ]
+        },
+        "instagram_story": {
+            "width": 1080,
+            "height": 1920,
+            "background": "{{colors.primary}}",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "overlay",
+                    "left": 0,
+                    "top": 0,
+                    "width": 1080,
+                    "height": 1920,
+                    "fill": "rgba(0,0,0,0.3)"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 465,
+                    "top": 150,
+                    "scaleToWidth": 150
+                },
+                {
+                    "type": "text",
+                    "role": "event_label",
+                    "content": "{{generated_event_label}}",
+                    "left": 540,
+                    "top": 700,
+                    "fontSize": 36,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "role": "headline",
+                    "content": "{{generated_headline}}",
+                    "left": 540,
+                    "top": 800,
+                    "fontSize": 96,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "role": "date",
+                    "content": "{{generated_date}}",
+                    "left": 540,
+                    "top": 1050,
+                    "fontSize": 48,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "left": 540,
+                    "top": 1600,
+                    "fontSize": 40,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}",
+                    "textAlign": "center",
+                    "originX": "center"
+                }
+            ]
+        }
+    }
+}

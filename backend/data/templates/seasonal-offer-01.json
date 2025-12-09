@@ -1,0 +1,240 @@
+{
+    "id": "seasonal-offer-01",
+    "name": "Seasonal Special",
+    "description": "Promote seasonal offers with festive styling",
+    "category": "seasonal",
+    "formats": {
+        "facebook": {
+            "width": 1200,
+            "height": 630,
+            "background": "{{colors.secondary}}",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "left_panel",
+                    "left": 0,
+                    "top": 0,
+                    "width": 600,
+                    "height": 630,
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 50,
+                    "top": 40,
+                    "scaleToWidth": 100
+                },
+                {
+                    "type": "text",
+                    "role": "season_tag",
+                    "content": "{{generated_season_tag}}",
+                    "prompt": "Write a seasonal tag like 'WINTER SPECIAL' or 'HOLIDAY DEALS', 2 words",
+                    "left": 50,
+                    "top": 180,
+                    "fontSize": 24,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "text",
+                    "role": "headline",
+                    "content": "{{generated_headline}}",
+                    "prompt": "Write a seasonal headline, 2-3 words like 'FESTIVE SAVINGS' or 'SEASON'S BEST'",
+                    "left": 50,
+                    "top": 220,
+                    "fontSize": 72,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "offer",
+                    "content": "{{generated_offer}}",
+                    "prompt": "Write a discount offer like '30% OFF' or 'BUY 2 GET 1 FREE', max 5 words",
+                    "left": 50,
+                    "top": 340,
+                    "fontSize": 48,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "text",
+                    "role": "validity",
+                    "content": "{{generated_validity}}",
+                    "prompt": "Write validity text like 'Valid till Dec 31' or 'Limited Period Offer'",
+                    "left": 50,
+                    "top": 500,
+                    "fontSize": 20,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "image",
+                    "role": "product_image",
+                    "source": "{{asset_urls.0}}",
+                    "left": 700,
+                    "top": 65,
+                    "scaleToWidth": 450
+                }
+            ]
+        },
+        "instagram_post": {
+            "width": 1080,
+            "height": 1080,
+            "background": "{{colors.secondary}}",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "top_panel",
+                    "left": 0,
+                    "top": 0,
+                    "width": 1080,
+                    "height": 550,
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 50,
+                    "top": 50,
+                    "scaleToWidth": 80
+                },
+                {
+                    "type": "text",
+                    "role": "season_tag",
+                    "content": "{{generated_season_tag}}",
+                    "left": 50,
+                    "top": 600,
+                    "fontSize": 24,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "text",
+                    "role": "headline",
+                    "content": "{{generated_headline}}",
+                    "left": 50,
+                    "top": 650,
+                    "fontSize": 72,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "text",
+                    "role": "offer",
+                    "content": "{{generated_offer}}",
+                    "left": 50,
+                    "top": 780,
+                    "fontSize": 48,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "validity",
+                    "content": "{{generated_validity}}",
+                    "left": 50,
+                    "top": 980,
+                    "fontSize": 20,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "product_image",
+                    "source": "{{asset_urls.0}}",
+                    "left": 290,
+                    "top": 80,
+                    "scaleToWidth": 500
+                }
+            ]
+        },
+        "instagram_story": {
+            "width": 1080,
+            "height": 1920,
+            "background": "{{colors.secondary}}",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "top_panel",
+                    "left": 0,
+                    "top": 0,
+                    "width": 1080,
+                    "height": 1000,
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 50,
+                    "top": 80,
+                    "scaleToWidth": 100
+                },
+                {
+                    "type": "text",
+                    "role": "season_tag",
+                    "content": "{{generated_season_tag}}",
+                    "left": 50,
+                    "top": 1100,
+                    "fontSize": 32,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "text",
+                    "role": "headline",
+                    "content": "{{generated_headline}}",
+                    "left": 50,
+                    "top": 1160,
+                    "fontSize": 96,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "text",
+                    "role": "offer",
+                    "content": "{{generated_offer}}",
+                    "left": 50,
+                    "top": 1350,
+                    "fontSize": 64,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "validity",
+                    "content": "{{generated_validity}}",
+                    "left": 50,
+                    "top": 1750,
+                    "fontSize": 24,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "product_image",
+                    "source": "{{asset_urls.0}}",
+                    "left": 90,
+                    "top": 220,
+                    "scaleToWidth": 900
+                }
+            ]
+        }
+    }
+}

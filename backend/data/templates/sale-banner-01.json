@@ -1,0 +1,233 @@
+{
+    "id": "sale-banner-01",
+    "name": "Big Sale Banner",
+    "description": "Perfect for announcing sales and discounts with bold typography",
+    "category": "sale",
+    "formats": {
+        "facebook": {
+            "width": 1200,
+            "height": 630,
+            "background": "{{colors.primary}}",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "accent_bar",
+                    "left": 0,
+                    "top": 0,
+                    "width": 1200,
+                    "height": 15,
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "rect",
+                    "role": "accent_bar_bottom",
+                    "left": 0,
+                    "top": 615,
+                    "width": 1200,
+                    "height": 15,
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 50,
+                    "top": 40,
+                    "scaleToWidth": 120
+                },
+                {
+                    "type": "text",
+                    "role": "headline",
+                    "content": "{{generated_headline}}",
+                    "prompt": "Write a catchy 2-3 word sale headline (like 'MEGA SALE' or 'BIG DEALS')",
+                    "left": 50,
+                    "top": 200,
+                    "fontSize": 96,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "subheadline",
+                    "content": "{{generated_subheadline}}",
+                    "prompt": "Write a brief discount tagline like 'Up to 50% Off' or 'Limited Time Only', max 5 words",
+                    "left": 50,
+                    "top": 320,
+                    "fontSize": 48,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "prompt": "Write a short call-to-action like 'Shop Now' or 'Learn More', max 2 words",
+                    "left": 50,
+                    "top": 450,
+                    "fontSize": 32,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "image",
+                    "role": "product_image",
+                    "source": "{{asset_urls.0}}",
+                    "left": 750,
+                    "top": 100,
+                    "scaleToWidth": 400
+                }
+            ]
+        },
+        "instagram_post": {
+            "width": 1080,
+            "height": 1080,
+            "background": "{{colors.primary}}",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "accent_bar",
+                    "left": 0,
+                    "top": 0,
+                    "width": 1080,
+                    "height": 15,
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "rect",
+                    "role": "accent_bar_bottom",
+                    "left": 0,
+                    "top": 1065,
+                    "width": 1080,
+                    "height": 15,
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 50,
+                    "top": 50,
+                    "scaleToWidth": 100
+                },
+                {
+                    "type": "text",
+                    "role": "headline",
+                    "content": "{{generated_headline}}",
+                    "left": 50,
+                    "top": 400,
+                    "fontSize": 96,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "subheadline",
+                    "content": "{{generated_subheadline}}",
+                    "left": 50,
+                    "top": 520,
+                    "fontSize": 48,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "left": 50,
+                    "top": 900,
+                    "fontSize": 32,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "image",
+                    "role": "product_image",
+                    "source": "{{asset_urls.0}}",
+                    "left": 540,
+                    "top": 150,
+                    "scaleToWidth": 480
+                }
+            ]
+        },
+        "instagram_story": {
+            "width": 1080,
+            "height": 1920,
+            "background": "{{colors.primary}}",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "accent_bar",
+                    "left": 0,
+                    "top": 0,
+                    "width": 1080,
+                    "height": 20,
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "rect",
+                    "role": "accent_bar_bottom",
+                    "left": 0,
+                    "top": 1900,
+                    "width": 1080,
+                    "height": 20,
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 50,
+                    "top": 80,
+                    "scaleToWidth": 120
+                },
+                {
+                    "type": "text",
+                    "role": "headline",
+                    "content": "{{generated_headline}}",
+                    "left": 50,
+                    "top": 800,
+                    "fontSize": 120,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "subheadline",
+                    "content": "{{generated_subheadline}}",
+                    "left": 50,
+                    "top": 960,
+                    "fontSize": 56,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "left": 50,
+                    "top": 1700,
+                    "fontSize": 40,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "image",
+                    "role": "product_image",
+                    "source": "{{asset_urls.0}}",
+                    "left": 140,
+                    "top": 250,
+                    "scaleToWidth": 800
+                }
+            ]
+        }
+    }
+}

@@ -1,17 +1,20 @@
 'use client';
 
-import { useRef, useState, use, useCallback } from 'react';
+import { useRef, useState, use, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import {
     ArrowLeft, Type, Image as ImageIcon, Shapes,
-    Download, Monitor, Smartphone, Layout, Wand2
+    Download, Monitor, Smartphone, Layout, Wand2, LayoutTemplate
 } from 'lucide-react';
-import FabricCanvas, { FabricCanvasHandle, TextProperties, ShapeProperties } from '@/components/FabricCanvas';
+import FabricCanvas, { FabricCanvasHandle, TextProperties, ShapeProperties, ImageProperties } from '@/components/FabricCanvas';
 import TextOptionsPanel from '@/components/TextOptionsPanel';
 import ShapesOptionsPanel from '@/components/ShapesOptionsPanel';
+import AssetsOptionsPanel from '@/components/AssetsOptionsPanel';
+import TemplatesOptionsPanel from '@/components/TemplatesOptionsPanel';
 import ThemeToggle from '@/components/ThemeToggle';
-import { generateCreative, CreativeRequest } from '@/lib/api';
+import { generateCreative, CreativeRequest, getProxiedImageUrl, generateFromTemplate, CanvasFormat } from '@/lib/api';
 import { useAuth } from '@/context/auth-context';
+import { getBrandKit, BrandKitData } from '@/lib/brandkit-service';
 import { FabricObject } from 'fabric';
 
 // Aspect Ratios
@@ -27,6 +30,7 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
     const { user } = useAuth();
 
     const canvasRef = useRef<FabricCanvasHandle>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [currentFormat, setCurrentFormat] = useState(FORMATS[0]);
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -39,29 +43,66 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
     const [shapeProperties, setShapeProperties] = useState<ShapeProperties | null>(null);
     const [showShapesPicker, setShowShapesPicker] = useState(false);
 
+    // Image/Assets state
+    const [isImageSelected, setIsImageSelected] = useState(false);
+    const [imageProperties, setImageProperties] = useState<ImageProperties | null>(null);
+    const [showAssetsPicker, setShowAssetsPicker] = useState(false);
+    const [brandKitData, setBrandKitData] = useState<BrandKitData | null>(null);
+
+    // Templates state
+    const [showTemplatesPanel, setShowTemplatesPanel] = useState(false);
+    const [isTemplateGenerating, setIsTemplateGenerating] = useState(false);
+    const [generatedFormats, setGeneratedFormats] = useState<{ facebook?: CanvasFormat; instagram?: CanvasFormat; story?: CanvasFormat } | null>(null);
+
     // Scale factor for display (since 1080px is too big for screen)
     const displayScale = 0.4;
 
-    const handleSelectionChange = useCallback((selectedObject: FabricObject | null, isText: boolean, isShape: boolean) => {
+    // Fetch BrandKit data on mount
+    useEffect(() => {
+        const fetchBrandKit = async () => {
+            if (user?.uid && brandkitId) {
+                try {
+                    const data = await getBrandKit(user.uid, brandkitId);
+                    setBrandKitData(data);
+                } catch (error) {
+                    console.error('Failed to fetch brandkit:', error);
+                }
+            }
+        };
+        fetchBrandKit();
+    }, [user?.uid, brandkitId]);
+
+    const handleSelectionChange = useCallback((selectedObject: FabricObject | null, isText: boolean, isShape: boolean, isImage: boolean) => {
         setIsTextSelected(isText);
         setIsShapeSelected(isShape);
+        setIsImageSelected(isImage);
 
-        // Close shape picker when something is selected
+        // Close pickers when something is selected
         if (selectedObject) {
             setShowShapesPicker(false);
+            setShowAssetsPicker(false);
+            setShowTemplatesPanel(false);
         }
 
         if (isText && canvasRef.current) {
             const props = canvasRef.current.getSelectedTextProperties();
             setTextProperties(props);
             setShapeProperties(null);
+            setImageProperties(null);
         } else if (isShape && canvasRef.current) {
             const props = canvasRef.current.getSelectedShapeProperties();
             setShapeProperties(props);
             setTextProperties(null);
+            setImageProperties(null);
+        } else if (isImage && canvasRef.current) {
+            const props = canvasRef.current.getSelectedImageProperties();
+            setImageProperties(props);
+            setTextProperties(null);
+            setShapeProperties(null);
         } else {
             setTextProperties(null);
             setShapeProperties(null);
+            setImageProperties(null);
         }
     }, []);
 
@@ -86,10 +127,87 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             canvasRef.current.deleteSelected();
             setIsTextSelected(false);
             setIsShapeSelected(false);
+            setIsImageSelected(false);
             setTextProperties(null);
             setShapeProperties(null);
+            setImageProperties(null);
         }
     }, []);
+
+    // Image handlers
+    const handleImagePropertyChange = useCallback((property: string, value: any) => {
+        if (canvasRef.current) {
+            canvasRef.current.updateImageProperty(property, value);
+            const props = canvasRef.current.getSelectedImageProperties();
+            setImageProperties(props);
+        }
+    }, []);
+
+    const handleFlipImage = useCallback((direction: 'horizontal' | 'vertical') => {
+        if (canvasRef.current) {
+            canvasRef.current.flipImage(direction);
+        }
+    }, []);
+
+    const handleFitToCanvas = useCallback(() => {
+        if (canvasRef.current) {
+            canvasRef.current.fitImageToCanvas();
+            const props = canvasRef.current.getSelectedImageProperties();
+            setImageProperties(props);
+        }
+    }, []);
+
+    const handleResetImageSize = useCallback(() => {
+        if (canvasRef.current) {
+            canvasRef.current.resetImageSize();
+            const props = canvasRef.current.getSelectedImageProperties();
+            setImageProperties(props);
+        }
+    }, []);
+
+    const handleAddImageFromUrl = useCallback((url: string) => {
+        // Use proxy for Firebase Storage URLs to bypass CORS
+        const imageUrl = getProxiedImageUrl(url);
+        canvasRef.current?.addImage(imageUrl);
+        setShowAssetsPicker(false);
+    }, []);
+
+    const handleUploadImage = useCallback(() => {
+        fileInputRef.current?.click();
+    }, []);
+
+    const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const dataUrl = event.target?.result as string;
+                canvasRef.current?.addImage(dataUrl);
+                setShowAssetsPicker(false);
+            };
+            reader.readAsDataURL(file);
+        }
+        // Reset input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    }, []);
+
+    const handleAssetsClick = useCallback(() => {
+        setShowAssetsPicker(!showAssetsPicker);
+        // Clear any selection when opening picker
+        if (!showAssetsPicker) {
+            canvasRef.current?.canvas?.discardActiveObject();
+            canvasRef.current?.canvas?.requestRenderAll();
+            setIsTextSelected(false);
+            setIsShapeSelected(false);
+            setIsImageSelected(false);
+            setTextProperties(null);
+            setShapeProperties(null);
+            setImageProperties(null);
+            setShowShapesPicker(false);
+        }
+    }, [showAssetsPicker]);
 
     const handleAddShape = useCallback((shapeType: string) => {
         if (!canvasRef.current) return;
@@ -126,11 +244,6 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
 
         setShowShapesPicker(false);
     }, []);
-
-    const handleFormatChange = (format: typeof FORMATS[0]) => {
-        setCurrentFormat(format);
-        canvasRef.current?.resizeCanvas(format.width, format.height);
-    };
 
     const handleDownload = () => {
         const dataUrl = canvasRef.current?.exportAsImage('png');
@@ -182,6 +295,98 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             setIsShapeSelected(false);
             setTextProperties(null);
             setShapeProperties(null);
+            setShowTemplatesPanel(false);
+            setShowAssetsPicker(false);
+        }
+    };
+
+    const handleTemplatesClick = () => {
+        setShowTemplatesPanel(!showTemplatesPanel);
+        // Clear any selection when opening panel
+        if (!showTemplatesPanel) {
+            canvasRef.current?.canvas?.discardActiveObject();
+            canvasRef.current?.canvas?.requestRenderAll();
+            setIsTextSelected(false);
+            setIsShapeSelected(false);
+            setIsImageSelected(false);
+            setTextProperties(null);
+            setShapeProperties(null);
+            setImageProperties(null);
+            setShowShapesPicker(false);
+            setShowAssetsPicker(false);
+        }
+    };
+
+    const handleSelectTemplate = async (templateId: string) => {
+        if (!user?.uid) {
+            alert('Please sign in to use templates');
+            return;
+        }
+
+        setIsTemplateGenerating(true);
+        try {
+            const response = await generateFromTemplate({
+                user_id: user.uid,
+                brandkit_id: brandkitId,
+                template_id: templateId
+            });
+
+            if (response.status === 'completed' && response.formats) {
+                // Store all formats
+                setGeneratedFormats(response.formats);
+
+                // Determine which format to load based on current view
+                let formatToLoad: CanvasFormat | undefined;
+                if (currentFormat.id === 'facebook') {
+                    formatToLoad = response.formats.facebook;
+                } else if (currentFormat.id === 'story') {
+                    formatToLoad = response.formats.story;
+                } else {
+                    formatToLoad = response.formats.instagram;
+                }
+
+                if (formatToLoad && formatToLoad.objects) {
+                    // Load the template to canvas
+                    canvasRef.current?.loadFromJSON({
+                        objects: formatToLoad.objects,
+                        background: formatToLoad.background || '#ffffff'
+                    });
+                }
+
+                setShowTemplatesPanel(false);
+            } else {
+                alert('Failed to generate template. Please try again.');
+            }
+        } catch (error) {
+            console.error('Template generation failed:', error);
+            alert('Error generating from template.');
+        } finally {
+            setIsTemplateGenerating(false);
+        }
+    };
+
+    // Handle format change with generated templates
+    const handleFormatChange = (format: typeof FORMATS[0]) => {
+        setCurrentFormat(format);
+        canvasRef.current?.resizeCanvas(format.width, format.height);
+
+        // If we have generated formats, load the appropriate one
+        if (generatedFormats) {
+            let formatToLoad: CanvasFormat | undefined;
+            if (format.id === 'facebook') {
+                formatToLoad = generatedFormats.facebook;
+            } else if (format.id === 'story') {
+                formatToLoad = generatedFormats.story;
+            } else {
+                formatToLoad = generatedFormats.instagram;
+            }
+
+            if (formatToLoad && formatToLoad.objects) {
+                canvasRef.current?.loadFromJSON({
+                    objects: formatToLoad.objects,
+                    background: formatToLoad.background || '#ffffff'
+                });
+            }
         }
     };
 
@@ -238,18 +443,20 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
                 <aside className="w-20 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col items-center py-6 gap-6 z-10">
                     <ToolButton icon={Wand2} label={isGenerating ? "Generating..." : "Generate AI"} onClick={handleGenerateAI} disabled={isGenerating} />
 
-                    <ToolButton icon={Layout} label="Templates" onClick={() => {
-                        const template = {
-                            objects: [
-                                { type: 'rect', left: 50, top: 50, width: 200, height: 200, fill: '#ff4444' },
-                                { type: 'text', left: 70, top: 120, text: 'Sale!', fontSize: 40, fill: 'white' }
-                            ],
-                            background: '#ffffff'
-                        };
-                        canvasRef.current?.loadFromJSON(template);
-                    }} />
+                    <ToolButton
+                        icon={LayoutTemplate}
+                        label={isTemplateGenerating ? "Generating..." : "Templates"}
+                        onClick={handleTemplatesClick}
+                        active={showTemplatesPanel}
+                        disabled={isTemplateGenerating}
+                    />
                     <ToolButton icon={Type} label="Text" onClick={() => canvasRef.current?.addText('Double click to edit')} />
-                    <ToolButton icon={ImageIcon} label="Assets" onClick={() => canvasRef.current?.addImage('https://source.unsplash.com/random/400x400')} />
+                    <ToolButton
+                        icon={ImageIcon}
+                        label="Assets"
+                        onClick={handleAssetsClick}
+                        active={showAssetsPicker}
+                    />
                     <ToolButton
                         icon={Shapes}
                         label="Shapes"
@@ -257,6 +464,15 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
                         active={showShapesPicker}
                     />
                 </aside>
+
+                {/* Hidden file input for image upload */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                />
 
                 {/* Canvas Area */}
                 <main className="flex-1 overflow-auto bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center p-8 relative">
@@ -302,6 +518,42 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
                         />
                     )}
 
+                    {/* Assets Picker Panel */}
+                    {showAssetsPicker && !isImageSelected && (
+                        <AssetsOptionsPanel
+                            mode="picker"
+                            brandKitAssets={{
+                                logoUrl: brandKitData?.logoUrl,
+                                assetUrls: brandKitData?.assetUrls
+                            }}
+                            onAddImage={handleAddImageFromUrl}
+                            onUploadImage={handleUploadImage}
+                        />
+                    )}
+
+                    {/* Image Editor Panel */}
+                    {isImageSelected && imageProperties && (
+                        <AssetsOptionsPanel
+                            mode="editor"
+                            imageProperties={imageProperties}
+                            onAddImage={handleAddImageFromUrl}
+                            onPropertyChange={handleImagePropertyChange}
+                            onFlip={handleFlipImage}
+                            onFitToCanvas={handleFitToCanvas}
+                            onResetSize={handleResetImageSize}
+                            onDelete={handleDeleteSelected}
+                        />
+                    )}
+
+                    {/* Templates Panel */}
+                    {showTemplatesPanel && (
+                        <TemplatesOptionsPanel
+                            isLoading={isTemplateGenerating}
+                            onSelectTemplate={handleSelectTemplate}
+                            onClose={() => setShowTemplatesPanel(false)}
+                        />
+                    )}
+
                     {/* Zoom Info overlay */}
                     <div className="absolute bottom-6 right-6 bg-black/70 text-white text-xs px-3 py-1 rounded-full backdrop-blur-md">
                         {(displayScale * 100).toFixed(0)}% • {currentFormat.width}x{currentFormat.height}px
@@ -320,12 +572,12 @@ function ToolButton({ icon: Icon, label, onClick, disabled, active }: { icon: an
             className={`flex flex-col items-center gap-1 group w-full ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${active
-                    ? 'bg-zinc-900 dark:bg-zinc-100'
-                    : 'bg-zinc-100 dark:bg-zinc-800'
+                ? 'bg-zinc-900 dark:bg-zinc-100'
+                : 'bg-zinc-100 dark:bg-zinc-800'
                 } ${!disabled && !active && 'group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700'}`}>
                 <Icon className={`w-5 h-5 ${active
-                        ? 'text-white dark:text-zinc-900'
-                        : 'text-zinc-600 dark:text-zinc-400'
+                    ? 'text-white dark:text-zinc-900'
+                    : 'text-zinc-600 dark:text-zinc-400'
                     } ${!disabled && !active && 'group-hover:text-zinc-900 dark:group-hover:text-white'}`} />
             </div>
             <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 text-center leading-tight">{label}</span>

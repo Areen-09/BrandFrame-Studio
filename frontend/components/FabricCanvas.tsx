@@ -24,6 +24,12 @@ export interface ShapeProperties {
     ry?: number;
 }
 
+export interface ImageProperties {
+    opacity: number;
+    scaleX: number;
+    scaleY: number;
+}
+
 export type ShapeType = 'rect' | 'circle' | 'triangle' | 'star' | 'pentagon' | 'hexagon' | 'line' | 'arrow' | 'curved-line';
 
 export interface FabricCanvasHandle {
@@ -49,6 +55,12 @@ export interface FabricCanvasHandle {
     // Shape formatting methods
     updateShapeProperty: (property: string, value: any) => void;
     getSelectedShapeProperties: () => ShapeProperties | null;
+    // Image formatting methods
+    updateImageProperty: (property: string, value: any) => void;
+    getSelectedImageProperties: () => ImageProperties | null;
+    flipImage: (direction: 'horizontal' | 'vertical') => void;
+    fitImageToCanvas: () => void;
+    resetImageSize: () => void;
     deleteSelected: () => void;
 }
 
@@ -56,8 +68,14 @@ interface FabricCanvasProps {
     width: number;
     height: number;
     backgroundColor?: string;
-    onSelectionChange?: (selectedObject: FabricObject | null, isText: boolean, isShape: boolean) => void;
+    onSelectionChange?: (selectedObject: FabricObject | null, isText: boolean, isShape: boolean, isImage: boolean) => void;
 }
+
+// Helper to check if object is an image
+const isImageObject = (obj: FabricObject | null): boolean => {
+    if (!obj) return false;
+    return obj instanceof FabricImage;
+};
 
 // Helper to check if object is a shape (not text or image)
 const isShapeObject = (obj: FabricObject | null): boolean => {
@@ -104,7 +122,8 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
             const activeObject = fabricCanvas.current.getActiveObject();
             const isText = activeObject instanceof Textbox;
             const isShape = isShapeObject(activeObject ?? null);
-            onSelectionChange(activeObject ?? null, isText, isShape);
+            const isImage = isImageObject(activeObject ?? null);
+            onSelectionChange(activeObject ?? null, isText, isShape, isImage);
         }, [onSelectionChange]);
 
         useEffect(() => {
@@ -126,7 +145,7 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
             canvas.on('selection:updated', handleSelectionChange);
             canvas.on('selection:cleared', () => {
                 if (onSelectionChange) {
-                    onSelectionChange(null, false, false);
+                    onSelectionChange(null, false, false, false);
                 }
             });
 
@@ -190,17 +209,72 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
             addImage: async (url) => {
                 if (fabricCanvas.current) {
                     try {
-                        const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
+                        // Check if this is an SVG file
+                        const isSvg = url.toLowerCase().includes('.svg');
 
-                        if (img.width && img.width > width / 2) {
-                            img.scaleToWidth(width / 2);
+                        if (isSvg) {
+                            // Use Fabric's SVG loading for better SVG support
+                            const { loadSVGFromURL, util } = await import('fabric');
+
+                            loadSVGFromURL(url).then((result) => {
+                                const validObjects = (result.objects || []).filter((obj): obj is NonNullable<typeof obj> => obj !== null);
+                                if (validObjects.length > 0) {
+                                    // Group all SVG elements together
+                                    const svgGroup = util.groupSVGElements(validObjects, result.options);
+
+                                    // Scale if needed
+                                    if (svgGroup.width && svgGroup.width > width / 2) {
+                                        svgGroup.scaleToWidth(width / 2);
+                                    }
+
+                                    fabricCanvas.current?.add(svgGroup);
+                                    fabricCanvas.current?.centerObject(svgGroup);
+                                    fabricCanvas.current?.setActiveObject(svgGroup);
+                                    fabricCanvas.current?.requestRenderAll();
+                                    handleSelectionChange();
+                                    console.log('SVG loaded successfully');
+                                } else {
+                                    console.error('No objects found in SVG');
+                                    alert('Could not load SVG - it may be empty or corrupted.');
+                                }
+                            }).catch((err) => {
+                                console.error('SVG load error:', err);
+                                alert('Failed to load SVG image.');
+                            });
+                        } else {
+                            // Regular image loading for non-SVG files
+                            const loadImageElement = (src: string): Promise<HTMLImageElement> => {
+                                return new Promise((resolve, reject) => {
+                                    const imgElement = new Image();
+                                    imgElement.crossOrigin = 'anonymous';
+                                    imgElement.onload = () => {
+                                        console.log(`Image loaded: ${imgElement.width}x${imgElement.height}`);
+                                        resolve(imgElement);
+                                    };
+                                    imgElement.onerror = (e) => {
+                                        console.error('Image load error:', e);
+                                        reject(e);
+                                    };
+                                    imgElement.src = src;
+                                });
+                            };
+
+                            const imgElement = await loadImageElement(url);
+                            const img = new FabricImage(imgElement);
+
+                            if (img.width && img.width > width / 2) {
+                                img.scaleToWidth(width / 2);
+                            }
+
+                            fabricCanvas.current.add(img);
+                            fabricCanvas.current.centerObject(img);
+                            fabricCanvas.current.setActiveObject(img);
+                            fabricCanvas.current.requestRenderAll();
+                            handleSelectionChange();
                         }
-
-                        fabricCanvas.current.add(img);
-                        fabricCanvas.current.centerObject(img);
-                        fabricCanvas.current.setActiveObject(img);
                     } catch (error) {
                         console.error('Failed to load image:', error);
+                        alert('Failed to load image. Please try uploading from your device instead.');
                     }
                 }
             },
@@ -414,6 +488,76 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
                     };
                 }
                 return null;
+            },
+
+            // Image formatting methods
+            updateImageProperty: (property: string, value: any) => {
+                if (!fabricCanvas.current) return;
+                const activeObject = fabricCanvas.current.getActiveObject();
+                if (activeObject && isImageObject(activeObject)) {
+                    activeObject.set(property as any, value);
+                    fabricCanvas.current.requestRenderAll();
+                }
+            },
+
+            getSelectedImageProperties: (): ImageProperties | null => {
+                if (!fabricCanvas.current) return null;
+                const activeObject = fabricCanvas.current.getActiveObject();
+                if (activeObject && isImageObject(activeObject)) {
+                    return {
+                        opacity: activeObject.opacity || 1,
+                        scaleX: activeObject.scaleX || 1,
+                        scaleY: activeObject.scaleY || 1,
+                    };
+                }
+                return null;
+            },
+
+            flipImage: (direction: 'horizontal' | 'vertical') => {
+                if (!fabricCanvas.current) return;
+                const activeObject = fabricCanvas.current.getActiveObject();
+                if (activeObject && isImageObject(activeObject)) {
+                    if (direction === 'horizontal') {
+                        activeObject.set('flipX', !activeObject.flipX);
+                    } else {
+                        activeObject.set('flipY', !activeObject.flipY);
+                    }
+                    fabricCanvas.current.requestRenderAll();
+                }
+            },
+
+            fitImageToCanvas: () => {
+                if (!fabricCanvas.current) return;
+                const activeObject = fabricCanvas.current.getActiveObject();
+                if (activeObject && isImageObject(activeObject)) {
+                    const canvasWidth = fabricCanvas.current.getWidth();
+                    const canvasHeight = fabricCanvas.current.getHeight();
+                    const imgWidth = activeObject.width || 1;
+                    const imgHeight = activeObject.height || 1;
+
+                    const scaleX = canvasWidth / imgWidth;
+                    const scaleY = canvasHeight / imgHeight;
+                    const scale = Math.min(scaleX, scaleY);
+
+                    activeObject.set({
+                        scaleX: scale,
+                        scaleY: scale,
+                    });
+                    fabricCanvas.current.centerObject(activeObject);
+                    fabricCanvas.current.requestRenderAll();
+                }
+            },
+
+            resetImageSize: () => {
+                if (!fabricCanvas.current) return;
+                const activeObject = fabricCanvas.current.getActiveObject();
+                if (activeObject && isImageObject(activeObject)) {
+                    activeObject.set({
+                        scaleX: 1,
+                        scaleY: 1,
+                    });
+                    fabricCanvas.current.requestRenderAll();
+                }
             },
 
             deleteSelected: () => {

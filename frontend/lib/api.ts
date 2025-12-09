@@ -24,3 +24,82 @@ export const generateCreative = async (data: CreativeRequest): Promise<CreativeR
         throw error;
     }
 };
+
+/**
+ * Convert a Firebase Storage URL to use the backend proxy for CORS-free loading
+ */
+export const getProxiedImageUrl = (url: string): string => {
+    // Only proxy Firebase Storage URLs
+    if (url.includes('firebasestorage.googleapis.com')) {
+        return `${API_URL}/proxy_image?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+};
+
+
+// Template Types
+export interface TemplateInfo {
+    id: string;
+    name: string;
+    description: string;
+    thumbnail: string;
+    category: string;
+}
+
+export interface TemplateListResponse {
+    templates: TemplateInfo[];
+}
+
+export interface TemplateGenerationRequest {
+    user_id: string;
+    brandkit_id: string;
+    template_id: string;
+}
+
+export interface CanvasFormat {
+    objects: any[];
+    background?: string;
+    width?: number;
+    height?: number;
+}
+
+export interface TemplateGenerationResponse {
+    status: string;
+    formats: {
+        facebook?: CanvasFormat;
+        instagram?: CanvasFormat;
+        story?: CanvasFormat;
+    };
+    message: string;
+}
+
+/**
+ * Fetch list of available templates
+ */
+export const getTemplates = async (): Promise<TemplateInfo[]> => {
+    try {
+        const response = await axios.get<TemplateListResponse>(`${API_URL}/templates`);
+        return response.data.templates;
+    } catch (error) {
+        console.error('Error fetching templates:', error);
+        throw error;
+    }
+};
+
+/**
+ * Generate a poster from a template
+ */
+export const generateFromTemplate = async (
+    data: TemplateGenerationRequest
+): Promise<TemplateGenerationResponse> => {
+    try {
+        const response = await axios.post<TemplateGenerationResponse>(
+            `${API_URL}/generate_from_template`,
+            data
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error generating from template:', error);
+        throw error;
+    }
+};

@@ -1,0 +1,166 @@
+{
+    "id": "minimalist-brand-01",
+    "name": "Minimalist Brand",
+    "description": "Clean, minimalist design focused on brand identity",
+    "category": "brand",
+    "formats": {
+        "facebook": {
+            "width": 1200,
+            "height": 630,
+            "background": "#FFFFFF",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "border",
+                    "left": 30,
+                    "top": 30,
+                    "width": 1140,
+                    "height": 570,
+                    "fill": "transparent",
+                    "stroke": "{{colors.primary}}",
+                    "strokeWidth": 3
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 525,
+                    "top": 120,
+                    "scaleToWidth": 150
+                },
+                {
+                    "type": "text",
+                    "role": "tagline",
+                    "content": "{{generated_tagline}}",
+                    "prompt": "Write a brand tagline, 4-6 words that captures the brand essence",
+                    "left": 600,
+                    "top": 320,
+                    "fontSize": 36,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.primary}}",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "prompt": "Write a simple CTA like 'Visit Us' or 'Learn More', max 2 words",
+                    "left": 600,
+                    "top": 480,
+                    "fontSize": 24,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}",
+                    "textAlign": "center",
+                    "originX": "center"
+                }
+            ]
+        },
+        "instagram_post": {
+            "width": 1080,
+            "height": 1080,
+            "background": "#FFFFFF",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "border",
+                    "left": 40,
+                    "top": 40,
+                    "width": 1000,
+                    "height": 1000,
+                    "fill": "transparent",
+                    "stroke": "{{colors.primary}}",
+                    "strokeWidth": 3
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 440,
+                    "top": 350,
+                    "scaleToWidth": 200
+                },
+                {
+                    "type": "text",
+                    "role": "tagline",
+                    "content": "{{generated_tagline}}",
+                    "left": 540,
+                    "top": 620,
+                    "fontSize": 36,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.primary}}",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "left": 540,
+                    "top": 850,
+                    "fontSize": 24,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}",
+                    "textAlign": "center",
+                    "originX": "center"
+                }
+            ]
+        },
+        "instagram_story": {
+            "width": 1080,
+            "height": 1920,
+            "background": "#FFFFFF",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "border",
+                    "left": 50,
+                    "top": 100,
+                    "width": 980,
+                    "height": 1720,
+                    "fill": "transparent",
+                    "stroke": "{{colors.primary}}",
+                    "strokeWidth": 4
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 390,
+                    "top": 700,
+                    "scaleToWidth": 300
+                },
+                {
+                    "type": "text",
+                    "role": "tagline",
+                    "content": "{{generated_tagline}}",
+                    "left": 540,
+                    "top": 1100,
+                    "fontSize": 48,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.primary}}",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "left": 540,
+                    "top": 1500,
+                    "fontSize": 32,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}",
+                    "textAlign": "center",
+                    "originX": "center"
+                }
+            ]
+        }
+    }
+}

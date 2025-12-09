@@ -1,0 +1,206 @@
+{
+    "id": "product-showcase-01",
+    "name": "Product Spotlight",
+    "description": "Highlight a single product with elegant styling",
+    "category": "product",
+    "formats": {
+        "facebook": {
+            "width": 1200,
+            "height": 630,
+            "background": "#FFFFFF",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "color_block",
+                    "left": 0,
+                    "top": 0,
+                    "width": 500,
+                    "height": 630,
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 50,
+                    "top": 50,
+                    "scaleToWidth": 100
+                },
+                {
+                    "type": "text",
+                    "role": "headline",
+                    "content": "{{generated_headline}}",
+                    "prompt": "Write a product feature headline, 2-3 words like 'NEW ARRIVAL' or 'BEST SELLER'",
+                    "left": 50,
+                    "top": 250,
+                    "fontSize": 64,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "description",
+                    "content": "{{generated_description}}",
+                    "prompt": "Write a brief product description, max 10 words highlighting quality or features",
+                    "left": 50,
+                    "top": 340,
+                    "fontSize": 24,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "prompt": "Write a call-to-action like 'Discover More' or 'Shop Now', max 2 words",
+                    "left": 50,
+                    "top": 500,
+                    "fontSize": 28,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "product_image",
+                    "source": "{{asset_urls.0}}",
+                    "left": 600,
+                    "top": 65,
+                    "scaleToWidth": 500
+                }
+            ]
+        },
+        "instagram_post": {
+            "width": 1080,
+            "height": 1080,
+            "background": "#FFFFFF",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "color_block",
+                    "left": 0,
+                    "top": 700,
+                    "width": 1080,
+                    "height": 380,
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 50,
+                    "top": 50,
+                    "scaleToWidth": 80
+                },
+                {
+                    "type": "text",
+                    "role": "headline",
+                    "content": "{{generated_headline}}",
+                    "left": 50,
+                    "top": 750,
+                    "fontSize": 64,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "description",
+                    "content": "{{generated_description}}",
+                    "left": 50,
+                    "top": 840,
+                    "fontSize": 24,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "left": 50,
+                    "top": 980,
+                    "fontSize": 28,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "product_image",
+                    "source": "{{asset_urls.0}}",
+                    "left": 190,
+                    "top": 150,
+                    "scaleToWidth": 700
+                }
+            ]
+        },
+        "instagram_story": {
+            "width": 1080,
+            "height": 1920,
+            "background": "#FFFFFF",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "color_block",
+                    "left": 0,
+                    "top": 1300,
+                    "width": 1080,
+                    "height": 620,
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 50,
+                    "top": 80,
+                    "scaleToWidth": 100
+                },
+                {
+                    "type": "text",
+                    "role": "headline",
+                    "content": "{{generated_headline}}",
+                    "left": 50,
+                    "top": 1380,
+                    "fontSize": 80,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "description",
+                    "content": "{{generated_description}}",
+                    "left": 50,
+                    "top": 1500,
+                    "fontSize": 32,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "left": 50,
+                    "top": 1750,
+                    "fontSize": 36,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "product_image",
+                    "source": "{{asset_urls.0}}",
+                    "left": 90,
+                    "top": 250,
+                    "scaleToWidth": 900
+                }
+            ]
+        }
+    }
+}

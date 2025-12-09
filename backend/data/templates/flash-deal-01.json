@@ -1,0 +1,240 @@
+{
+    "id": "flash-deal-01",
+    "name": "Flash Deal",
+    "description": "Urgent, time-sensitive deal with bold styling",
+    "category": "sale",
+    "formats": {
+        "facebook": {
+            "width": 1200,
+            "height": 630,
+            "background": "#1a1a1a",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "highlight_strip",
+                    "left": 0,
+                    "top": 280,
+                    "width": 600,
+                    "height": 120,
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 50,
+                    "top": 40,
+                    "scaleToWidth": 100
+                },
+                {
+                    "type": "text",
+                    "role": "urgency_tag",
+                    "content": "{{generated_urgency_tag}}",
+                    "prompt": "Write an urgency tag like '⚡ FLASH SALE' or '🔥 HOT DEAL', 2-3 words with emoji",
+                    "left": 50,
+                    "top": 180,
+                    "fontSize": 28,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "text",
+                    "role": "discount",
+                    "content": "{{generated_discount}}",
+                    "prompt": "Write a big discount number like '50% OFF' or '70% OFF'",
+                    "left": 50,
+                    "top": 280,
+                    "fontSize": 96,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "timer",
+                    "content": "{{generated_timer}}",
+                    "prompt": "Write a time limit like 'Ends in 24 Hours' or 'Today Only'",
+                    "left": 50,
+                    "top": 450,
+                    "fontSize": 28,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "prompt": "Write an urgent CTA like 'GRAB NOW' or 'SHOP FAST', max 2 words",
+                    "left": 50,
+                    "top": 530,
+                    "fontSize": 24,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "product_image",
+                    "source": "{{asset_urls.0}}",
+                    "left": 700,
+                    "top": 65,
+                    "scaleToWidth": 450
+                }
+            ]
+        },
+        "instagram_post": {
+            "width": 1080,
+            "height": 1080,
+            "background": "#1a1a1a",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "highlight_strip",
+                    "left": 0,
+                    "top": 550,
+                    "width": 1080,
+                    "height": 180,
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 50,
+                    "top": 50,
+                    "scaleToWidth": 80
+                },
+                {
+                    "type": "text",
+                    "role": "urgency_tag",
+                    "content": "{{generated_urgency_tag}}",
+                    "left": 50,
+                    "top": 450,
+                    "fontSize": 28,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "text",
+                    "role": "discount",
+                    "content": "{{generated_discount}}",
+                    "left": 50,
+                    "top": 560,
+                    "fontSize": 120,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "timer",
+                    "content": "{{generated_timer}}",
+                    "left": 50,
+                    "top": 800,
+                    "fontSize": 28,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "left": 50,
+                    "top": 950,
+                    "fontSize": 24,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "product_image",
+                    "source": "{{asset_urls.0}}",
+                    "left": 290,
+                    "top": 50,
+                    "scaleToWidth": 500
+                }
+            ]
+        },
+        "instagram_story": {
+            "width": 1080,
+            "height": 1920,
+            "background": "#1a1a1a",
+            "elements": [
+                {
+                    "type": "rect",
+                    "role": "highlight_strip",
+                    "left": 0,
+                    "top": 950,
+                    "width": 1080,
+                    "height": 250,
+                    "fill": "{{colors.primary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "logo",
+                    "source": "{{logo_url}}",
+                    "left": 50,
+                    "top": 80,
+                    "scaleToWidth": 100
+                },
+                {
+                    "type": "text",
+                    "role": "urgency_tag",
+                    "content": "{{generated_urgency_tag}}",
+                    "left": 50,
+                    "top": 850,
+                    "fontSize": 36,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "text",
+                    "role": "discount",
+                    "content": "{{generated_discount}}",
+                    "left": 50,
+                    "top": 980,
+                    "fontSize": 150,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "timer",
+                    "content": "{{generated_timer}}",
+                    "left": 50,
+                    "top": 1300,
+                    "fontSize": 36,
+                    "fontWeight": "normal",
+                    "fontFamily": "Arial",
+                    "fill": "#FFFFFF"
+                },
+                {
+                    "type": "text",
+                    "role": "cta",
+                    "content": "{{generated_cta}}",
+                    "left": 50,
+                    "top": 1700,
+                    "fontSize": 32,
+                    "fontWeight": "bold",
+                    "fontFamily": "Arial",
+                    "fill": "{{colors.secondary}}"
+                },
+                {
+                    "type": "image",
+                    "role": "product_image",
+                    "source": "{{asset_urls.0}}",
+                    "left": 90,
+                    "top": 200,
+                    "scaleToWidth": 900
+                }
+            ]
+        }
+    }
+}

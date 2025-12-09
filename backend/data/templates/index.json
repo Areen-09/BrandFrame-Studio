@@ -1,0 +1,46 @@
+{
+    "templates": [
+        {
+            "id": "sale-banner-01",
+            "name": "Big Sale Banner",
+            "description": "Perfect for announcing sales and discounts with bold typography",
+            "thumbnail": "/templates/sale-banner-thumb.svg",
+            "category": "sale"
+        },
+        {
+            "id": "product-showcase-01",
+            "name": "Product Spotlight",
+            "description": "Highlight a single product with elegant styling",
+            "thumbnail": "/templates/product-showcase-thumb.svg",
+            "category": "product"
+        },
+        {
+            "id": "event-promo-01",
+            "name": "Event Announcement",
+            "description": "Announce events, launches, or special occasions",
+            "thumbnail": "/templates/event-promo-thumb.svg",
+            "category": "event"
+        },
+        {
+            "id": "seasonal-offer-01",
+            "name": "Seasonal Special",
+            "description": "Promote seasonal offers with festive styling",
+            "thumbnail": "/templates/seasonal-offer-thumb.svg",
+            "category": "seasonal"
+        },
+        {
+            "id": "minimalist-brand-01",
+            "name": "Minimalist Brand",
+            "description": "Clean, minimalist design focused on brand identity",
+            "thumbnail": "/templates/minimalist-brand-thumb.svg",
+            "category": "brand"
+        },
+        {
+            "id": "flash-deal-01",
+            "name": "Flash Deal",
+            "description": "Urgent, time-sensitive deal with bold styling",
+            "thumbnail": "/templates/flash-deal-thumb.svg",
+            "category": "sale"
+        }
+    ]
+}
