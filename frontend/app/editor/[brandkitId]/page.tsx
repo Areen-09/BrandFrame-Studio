@@ -4,13 +4,14 @@ import { useRef, useState, use, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import {
     ArrowLeft, Type, Image as ImageIcon, Shapes,
-    Download, Monitor, Smartphone, Layout, Wand2, LayoutTemplate
+    Download, Monitor, Smartphone, Layout, Wand2, LayoutTemplate, Package
 } from 'lucide-react';
 import FabricCanvas, { FabricCanvasHandle, TextProperties, ShapeProperties, ImageProperties } from '@/components/FabricCanvas';
 import TextOptionsPanel from '@/components/TextOptionsPanel';
 import ShapesOptionsPanel from '@/components/ShapesOptionsPanel';
 import AssetsOptionsPanel from '@/components/AssetsOptionsPanel';
 import TemplatesOptionsPanel from '@/components/TemplatesOptionsPanel';
+import ProductInfoPanel, { ProductInfo } from '@/components/ProductInfoPanel';
 import ThemeToggle from '@/components/ThemeToggle';
 import { generateCreative, CreativeRequest, getProxiedImageUrl, generateFromTemplate, CanvasFormat } from '@/lib/api';
 import { useAuth } from '@/context/auth-context';
@@ -54,6 +55,10 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
     const [isTemplateGenerating, setIsTemplateGenerating] = useState(false);
     const [generatedFormats, setGeneratedFormats] = useState<{ facebook?: CanvasFormat; instagram?: CanvasFormat; story?: CanvasFormat } | null>(null);
 
+    // Product Info state
+    const [showProductInfoPanel, setShowProductInfoPanel] = useState(false);
+    const [isProductGenerating, setIsProductGenerating] = useState(false);
+
     // Scale factor for display (since 1080px is too big for screen)
     const displayScale = 0.4;
 
@@ -82,6 +87,7 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             setShowShapesPicker(false);
             setShowAssetsPicker(false);
             setShowTemplatesPanel(false);
+            setShowProductInfoPanel(false);
         }
 
         if (isText && canvasRef.current) {
@@ -314,6 +320,86 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             setImageProperties(null);
             setShowShapesPicker(false);
             setShowAssetsPicker(false);
+            setShowProductInfoPanel(false);
+        }
+    };
+
+    const handleProductInfoClick = () => {
+        setShowProductInfoPanel(!showProductInfoPanel);
+        // Clear any selection when opening panel
+        if (!showProductInfoPanel) {
+            canvasRef.current?.canvas?.discardActiveObject();
+            canvasRef.current?.canvas?.requestRenderAll();
+            setIsTextSelected(false);
+            setIsShapeSelected(false);
+            setIsImageSelected(false);
+            setTextProperties(null);
+            setShapeProperties(null);
+            setImageProperties(null);
+            setShowShapesPicker(false);
+            setShowAssetsPicker(false);
+            setShowTemplatesPanel(false);
+        }
+    };
+
+    const handleProductInfoGenerate = async (productInfo: ProductInfo) => {
+        if (!user?.uid) {
+            alert('Please sign in to generate posters');
+            return;
+        }
+
+        setIsProductGenerating(true);
+        try {
+            // Build a comprehensive prompt from product info
+            const posterTypeName = productInfo.posterType.charAt(0).toUpperCase() + productInfo.posterType.slice(1).replace('_', ' ');
+
+            let promptParts: string[] = [];
+            promptParts.push(`Create a ${posterTypeName} poster for "${productInfo.productName}"`);
+
+            if (productInfo.productDescription) {
+                promptParts.push(`Product details: ${productInfo.productDescription}`);
+            }
+
+            if (productInfo.posterDescription) {
+                promptParts.push(`Design style: ${productInfo.posterDescription}`);
+            }
+
+            if (productInfo.price || productInfo.discountPrice) {
+                if (productInfo.price && productInfo.discountPrice) {
+                    promptParts.push(`Original price: ${productInfo.price}, Sale price: ${productInfo.discountPrice}`);
+                } else if (productInfo.price) {
+                    promptParts.push(`Price: ${productInfo.price}`);
+                } else if (productInfo.discountPrice) {
+                    promptParts.push(`Sale price: ${productInfo.discountPrice}`);
+                }
+            }
+
+            if (productInfo.tagline) {
+                promptParts.push(`Tagline/CTA: ${productInfo.tagline}`);
+            }
+
+            const prompt = promptParts.join('. ');
+
+            const request: CreativeRequest = {
+                brandkit_id: brandkitId,
+                user_id: user.uid,
+                prompt: prompt,
+                aspect_ratio: currentFormat.id === 'story' ? '9:16' : (currentFormat.id === 'facebook' ? '1.91:1' : '1:1')
+            };
+
+            const response = await generateCreative(request);
+
+            if (response.image_url) {
+                canvasRef.current?.addImage(response.image_url);
+                setShowProductInfoPanel(false);
+            } else {
+                alert("Failed to generate image. Please try again.");
+            }
+        } catch (error) {
+            console.error("Generation failed", error);
+            alert("Error generating creative.");
+        } finally {
+            setIsProductGenerating(false);
         }
     };
 
@@ -441,6 +527,13 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             <div className="flex-1 flex overflow-hidden">
                 {/* Sidebar */}
                 <aside className="w-20 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col items-center py-6 gap-6 z-10">
+                    <ToolButton
+                        icon={Package}
+                        label={isProductGenerating ? "Generating..." : "Product Info"}
+                        onClick={handleProductInfoClick}
+                        active={showProductInfoPanel}
+                        disabled={isProductGenerating}
+                    />
                     <ToolButton icon={Wand2} label={isGenerating ? "Generating..." : "Generate AI"} onClick={handleGenerateAI} disabled={isGenerating} />
 
                     <ToolButton
@@ -551,6 +644,15 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
                             isLoading={isTemplateGenerating}
                             onSelectTemplate={handleSelectTemplate}
                             onClose={() => setShowTemplatesPanel(false)}
+                        />
+                    )}
+
+                    {/* Product Info Panel */}
+                    {showProductInfoPanel && (
+                        <ProductInfoPanel
+                            onClose={() => setShowProductInfoPanel(false)}
+                            onGenerate={handleProductInfoGenerate}
+                            isGenerating={isProductGenerating}
                         />
                     )}
 
