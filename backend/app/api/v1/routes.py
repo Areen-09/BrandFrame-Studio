@@ -3,10 +3,13 @@ from fastapi.responses import Response
 from app.api.v1.models import (
     CreativeRequest, CreativeResponse,
     TemplateGenerationRequest, TemplateGenerationResponse,
-    TemplateListResponse, TemplateInfo
+    TemplateListResponse, TemplateInfo,
+    ProductPosterRequest, ProductPosterResponse,
+    RemoveBackgroundRequest, RemoveBackgroundResponse
 )
 from app.agents.creative_agent import creative_graph
 from app.agents.template_agent import template_graph, get_template_list
+from app.agents.product_agent import product_graph
 import httpx
 from urllib.parse import unquote
 import logging
@@ -152,3 +155,108 @@ async def generate_from_template(request: TemplateGenerationRequest):
     except Exception as e:
         logger.error(f"Template generation error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/generate_product_poster", response_model=ProductPosterResponse)
+async def generate_product_poster(request: ProductPosterRequest):
+    """
+    Generate a product poster using AI-designed layouts.
+    Returns canvas-ready JSON for all 3 formats (instagram, story, facebook).
+    """
+    try:
+        logger.info(f"Generating product poster for: {request.product_name} (User: {request.user_id})")
+        
+        # Initialize state
+        initial_state = {
+            "user_id": request.user_id,
+            "brandkit_id": request.brandkit_id,
+            "product_name": request.product_name,
+            "product_description": request.product_description,
+            "poster_type": request.poster_type,
+            "poster_description": request.poster_description,
+            "product_image_data": request.product_image_data,
+            "tagline": request.tagline,
+            "brand_data": {},
+            "poster_layouts": {},
+            "generated_images": {},
+            "canvas_formats": {},
+            "status": "processing",
+            "error": None
+        }
+        
+        # Run the product graph
+        result = await product_graph.ainvoke(initial_state)
+        
+        if result.get("status") == "failed":
+            raise HTTPException(
+                status_code=400,
+                detail=result.get("error", "Product poster generation failed")
+            )
+        
+        return ProductPosterResponse(
+            status=result.get("status", "completed"),
+            formats=result.get("canvas_formats", {}),
+            message="Product poster generated successfully"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Product poster generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/remove_background", response_model=RemoveBackgroundResponse)
+async def remove_background(request: RemoveBackgroundRequest):
+    """
+    Remove the background from an image using rembg.
+    Accepts a base64 encoded image and returns the image with transparent background.
+    """
+    try:
+        import base64
+        import io
+        from PIL import Image
+        from rembg import remove
+        
+        logger.info("Processing remove background request...")
+        
+        # Extract base64 data from data URL
+        image_data = request.image_data
+        if ',' in image_data:
+            # Remove the data URL prefix (e.g., "data:image/png;base64,")
+            image_data = image_data.split(',')[1]
+        
+        # Decode base64 to bytes
+        image_bytes = base64.b64decode(image_data)
+        
+        # Open image with PIL
+        input_image = Image.open(io.BytesIO(image_bytes))
+        
+        # Remove background using rembg
+        output_image = remove(input_image)
+        
+        # Convert result to base64
+        output_buffer = io.BytesIO()
+        output_image.save(output_buffer, format='PNG')
+        output_buffer.seek(0)
+        
+        result_base64 = base64.b64encode(output_buffer.getvalue()).decode('utf-8')
+        result_data_url = f"data:image/png;base64,{result_base64}"
+        
+        logger.info("Background removed successfully")
+        
+        return RemoveBackgroundResponse(
+            status="completed",
+            image_data=result_data_url,
+            message="Background removed successfully"
+        )
+        
+    except ImportError as e:
+        logger.error(f"Missing dependency for background removal: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail="Background removal service not available. Please install rembg: pip install rembg"
+        )
+    except Exception as e:
+        logger.error(f"Background removal error: {type(e).__name__}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to remove background: {str(e)}")

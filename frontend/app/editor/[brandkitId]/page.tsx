@@ -12,8 +12,9 @@ import ShapesOptionsPanel from '@/components/ShapesOptionsPanel';
 import AssetsOptionsPanel from '@/components/AssetsOptionsPanel';
 import TemplatesOptionsPanel from '@/components/TemplatesOptionsPanel';
 import ProductInfoPanel, { ProductInfo } from '@/components/ProductInfoPanel';
+import GenerateAIPanel, { GenerateAIInput } from '@/components/GenerateAIPanel';
 import ThemeToggle from '@/components/ThemeToggle';
-import { generateCreative, CreativeRequest, getProxiedImageUrl, generateFromTemplate, CanvasFormat } from '@/lib/api';
+import { generateCreative, CreativeRequest, getProxiedImageUrl, generateFromTemplate, CanvasFormat, generateProductPoster, ProductPosterRequest, removeBackground } from '@/lib/api';
 import { useAuth } from '@/context/auth-context';
 import { getBrandKit, BrandKitData } from '@/lib/brandkit-service';
 import { FabricObject } from 'fabric';
@@ -55,9 +56,18 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
     const [isTemplateGenerating, setIsTemplateGenerating] = useState(false);
     const [generatedFormats, setGeneratedFormats] = useState<{ facebook?: CanvasFormat; instagram?: CanvasFormat; story?: CanvasFormat } | null>(null);
 
+    // Canvas states for each format (to preserve user edits when switching)
+    const [canvasStates, setCanvasStates] = useState<{ [key: string]: any }>({});
+
     // Product Info state
     const [showProductInfoPanel, setShowProductInfoPanel] = useState(false);
     const [isProductGenerating, setIsProductGenerating] = useState(false);
+
+    // Generate AI state
+    const [showGenerateAIPanel, setShowGenerateAIPanel] = useState(false);
+
+    // Remove background state
+    const [isRemovingBackground, setIsRemovingBackground] = useState(false);
 
     // Scale factor for display (since 1080px is too big for screen)
     const displayScale = 0.4;
@@ -88,6 +98,7 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             setShowAssetsPicker(false);
             setShowTemplatesPanel(false);
             setShowProductInfoPanel(false);
+            setShowGenerateAIPanel(false);
         }
 
         if (isText && canvasRef.current) {
@@ -171,6 +182,35 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
         }
     }, []);
 
+    const handleRemoveBackground = useCallback(async () => {
+        if (!canvasRef.current) return;
+
+        const imageDataUrl = canvasRef.current.getSelectedImageDataUrl();
+        if (!imageDataUrl) {
+            alert('No image selected');
+            return;
+        }
+
+        setIsRemovingBackground(true);
+        try {
+            const response = await removeBackground({ image_data: imageDataUrl });
+
+            if (response.status === 'completed' && response.image_data) {
+                await canvasRef.current.replaceSelectedImage(response.image_data);
+                // Update image properties after replacement
+                const props = canvasRef.current.getSelectedImageProperties();
+                setImageProperties(props);
+            } else {
+                alert('Failed to remove background. Please try again.');
+            }
+        } catch (error) {
+            console.error('Remove background failed:', error);
+            alert('Error removing background. Make sure the backend is running with rembg installed.');
+        } finally {
+            setIsRemovingBackground(false);
+        }
+    }, []);
+
     const handleAddImageFromUrl = useCallback((url: string) => {
         // Use proxy for Firebase Storage URLs to bypass CORS
         const imageUrl = getProxiedImageUrl(url);
@@ -212,6 +252,9 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             setShapeProperties(null);
             setImageProperties(null);
             setShowShapesPicker(false);
+            setShowTemplatesPanel(false);
+            setShowProductInfoPanel(false);
+            setShowGenerateAIPanel(false);
         }
     }, [showAssetsPicker]);
 
@@ -263,15 +306,42 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
         }
     };
 
-    const handleGenerateAI = async () => {
-        const prompt = window.prompt("Enter a description for your poster (e.g., 'Summer sale for organic juice'):");
-        if (!prompt) return;
+    const handleGenerateAIClick = () => {
+        setShowGenerateAIPanel(!showGenerateAIPanel);
+        // Clear any selection when opening panel
+        if (!showGenerateAIPanel) {
+            canvasRef.current?.canvas?.discardActiveObject();
+            canvasRef.current?.canvas?.requestRenderAll();
+            setIsTextSelected(false);
+            setIsShapeSelected(false);
+            setIsImageSelected(false);
+            setTextProperties(null);
+            setShapeProperties(null);
+            setImageProperties(null);
+            setShowShapesPicker(false);
+            setShowAssetsPicker(false);
+            setShowTemplatesPanel(false);
+            setShowProductInfoPanel(false);
+        }
+    };
+
+    const handleGenerateAISubmit = async (input: GenerateAIInput) => {
+        if (!user?.uid) {
+            alert('Please sign in to generate images');
+            return;
+        }
 
         setIsGenerating(true);
         try {
+            // Build the prompt with optional reference image context
+            let prompt = input.imageDescription;
+            if (input.referenceImageUrl) {
+                prompt += " (Reference image provided for style guidance)";
+            }
+
             const request: CreativeRequest = {
                 brandkit_id: brandkitId,
-                user_id: user?.uid || '',
+                user_id: user.uid,
                 prompt: prompt,
                 aspect_ratio: currentFormat.id === 'story' ? '9:16' : (currentFormat.id === 'facebook' ? '1.91:1' : '1:1')
             };
@@ -280,6 +350,7 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
 
             if (response.image_url) {
                 canvasRef.current?.addImage(response.image_url);
+                setShowGenerateAIPanel(false);
             } else {
                 alert("Failed to generate image. Please try again.");
             }
@@ -303,6 +374,8 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             setShapeProperties(null);
             setShowTemplatesPanel(false);
             setShowAssetsPicker(false);
+            setShowProductInfoPanel(false);
+            setShowGenerateAIPanel(false);
         }
     };
 
@@ -321,6 +394,7 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             setShowShapesPicker(false);
             setShowAssetsPicker(false);
             setShowProductInfoPanel(false);
+            setShowGenerateAIPanel(false);
         }
     };
 
@@ -339,6 +413,7 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             setShowShapesPicker(false);
             setShowAssetsPicker(false);
             setShowTemplatesPanel(false);
+            setShowGenerateAIPanel(false);
         }
     };
 
@@ -350,54 +425,49 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
 
         setIsProductGenerating(true);
         try {
-            // Build a comprehensive prompt from product info
-            const posterTypeName = productInfo.posterType.charAt(0).toUpperCase() + productInfo.posterType.slice(1).replace('_', ' ');
-
-            let promptParts: string[] = [];
-            promptParts.push(`Create a ${posterTypeName} poster for "${productInfo.productName}"`);
-
-            if (productInfo.productDescription) {
-                promptParts.push(`Product details: ${productInfo.productDescription}`);
-            }
-
-            if (productInfo.posterDescription) {
-                promptParts.push(`Design style: ${productInfo.posterDescription}`);
-            }
-
-            if (productInfo.price || productInfo.discountPrice) {
-                if (productInfo.price && productInfo.discountPrice) {
-                    promptParts.push(`Original price: ${productInfo.price}, Sale price: ${productInfo.discountPrice}`);
-                } else if (productInfo.price) {
-                    promptParts.push(`Price: ${productInfo.price}`);
-                } else if (productInfo.discountPrice) {
-                    promptParts.push(`Sale price: ${productInfo.discountPrice}`);
-                }
-            }
-
-            if (productInfo.tagline) {
-                promptParts.push(`Tagline/CTA: ${productInfo.tagline}`);
-            }
-
-            const prompt = promptParts.join('. ');
-
-            const request: CreativeRequest = {
-                brandkit_id: brandkitId,
+            const request: ProductPosterRequest = {
                 user_id: user.uid,
-                prompt: prompt,
-                aspect_ratio: currentFormat.id === 'story' ? '9:16' : (currentFormat.id === 'facebook' ? '1.91:1' : '1:1')
+                brandkit_id: brandkitId,
+                product_name: productInfo.productName,
+                product_description: productInfo.productDescription || undefined,
+                poster_type: productInfo.posterType,
+                poster_description: productInfo.posterDescription || undefined,
+                product_image_data: productInfo.productImageUrl || undefined,
+                tagline: productInfo.tagline || undefined,
             };
 
-            const response = await generateCreative(request);
+            const response = await generateProductPoster(request);
 
-            if (response.image_url) {
-                canvasRef.current?.addImage(response.image_url);
+            if (response.status === 'completed' && response.formats) {
+                // Store all formats for switching (clear previous user edits)
+                setGeneratedFormats(response.formats);
+                setCanvasStates({}); // Clear saved states when new generation happens
+
+                // Determine which format to load based on current view
+                let formatToLoad: CanvasFormat | undefined;
+                if (currentFormat.id === 'facebook') {
+                    formatToLoad = response.formats.facebook;
+                } else if (currentFormat.id === 'story') {
+                    formatToLoad = response.formats.story;
+                } else {
+                    formatToLoad = response.formats.instagram;
+                }
+
+                if (formatToLoad && formatToLoad.objects) {
+                    // Load the generated poster to canvas
+                    canvasRef.current?.loadFromJSON({
+                        objects: formatToLoad.objects,
+                        background: formatToLoad.background || '#ffffff'
+                    });
+                }
+
                 setShowProductInfoPanel(false);
             } else {
-                alert("Failed to generate image. Please try again.");
+                alert("Failed to generate poster. Please try again.");
             }
         } catch (error) {
             console.error("Generation failed", error);
-            alert("Error generating creative.");
+            alert("Error generating poster.");
         } finally {
             setIsProductGenerating(false);
         }
@@ -418,8 +488,9 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
             });
 
             if (response.status === 'completed' && response.formats) {
-                // Store all formats
+                // Store all formats (clear previous user edits)
                 setGeneratedFormats(response.formats);
+                setCanvasStates({}); // Clear saved states when new template is generated
 
                 // Determine which format to load based on current view
                 let formatToLoad: CanvasFormat | undefined;
@@ -453,11 +524,26 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
 
     // Handle format change with generated templates
     const handleFormatChange = (format: typeof FORMATS[0]) => {
+        // Save current canvas state before switching
+        if (canvasRef.current) {
+            const currentState = canvasRef.current.getCanvasState();
+            if (currentState) {
+                setCanvasStates(prev => ({
+                    ...prev,
+                    [currentFormat.id]: currentState
+                }));
+            }
+        }
+
         setCurrentFormat(format);
         canvasRef.current?.resizeCanvas(format.width, format.height);
 
-        // If we have generated formats, load the appropriate one
-        if (generatedFormats) {
+        // Check if we have a saved state for this format (user edits)
+        if (canvasStates[format.id]) {
+            canvasRef.current?.loadFromJSON(canvasStates[format.id]);
+        }
+        // Otherwise, if we have generated formats, load the appropriate one
+        else if (generatedFormats) {
             let formatToLoad: CanvasFormat | undefined;
             if (format.id === 'facebook') {
                 formatToLoad = generatedFormats.facebook;
@@ -534,7 +620,13 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
                         active={showProductInfoPanel}
                         disabled={isProductGenerating}
                     />
-                    <ToolButton icon={Wand2} label={isGenerating ? "Generating..." : "Generate AI"} onClick={handleGenerateAI} disabled={isGenerating} />
+                    <ToolButton
+                        icon={Wand2}
+                        label={isGenerating ? "Generating..." : "Generate AI"}
+                        onClick={handleGenerateAIClick}
+                        active={showGenerateAIPanel}
+                        disabled={isGenerating}
+                    />
 
                     <ToolButton
                         icon={LayoutTemplate}
@@ -635,6 +727,8 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
                             onFitToCanvas={handleFitToCanvas}
                             onResetSize={handleResetImageSize}
                             onDelete={handleDeleteSelected}
+                            onRemoveBackground={handleRemoveBackground}
+                            isRemovingBackground={isRemovingBackground}
                         />
                     )}
 
@@ -653,6 +747,15 @@ export default function EditorPage({ params }: { params: Promise<{ brandkitId: s
                             onClose={() => setShowProductInfoPanel(false)}
                             onGenerate={handleProductInfoGenerate}
                             isGenerating={isProductGenerating}
+                        />
+                    )}
+
+                    {/* Generate AI Panel */}
+                    {showGenerateAIPanel && (
+                        <GenerateAIPanel
+                            onClose={() => setShowGenerateAIPanel(false)}
+                            onGenerate={handleGenerateAISubmit}
+                            isGenerating={isGenerating}
                         />
                     )}
 

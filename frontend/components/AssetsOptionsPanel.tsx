@@ -28,6 +28,8 @@ interface AssetsOptionsPanelProps {
     onFitToCanvas?: () => void;
     onResetSize?: () => void;
     onDelete?: () => void;
+    onRemoveBackground?: () => void;
+    isRemovingBackground?: boolean;
 }
 
 export default function AssetsOptionsPanel({
@@ -40,7 +42,9 @@ export default function AssetsOptionsPanel({
     onFlip,
     onFitToCanvas,
     onResetSize,
-    onDelete
+    onDelete,
+    onRemoveBackground,
+    isRemovingBackground = false
 }: AssetsOptionsPanelProps) {
 
     if (mode === 'picker') {
@@ -207,16 +211,29 @@ export default function AssetsOptionsPanel({
                     </div>
                 </div>
 
-                {/* Remove Background (Placeholder) */}
+                {/* Remove Background */}
                 <div>
                     <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">Background</label>
                     <button
-                        className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium hover:from-purple-600 hover:to-pink-600 transition-all opacity-50 cursor-not-allowed"
-                        disabled
-                        title="Coming Soon"
+                        onClick={onRemoveBackground}
+                        disabled={isRemovingBackground || !onRemoveBackground}
+                        className={`w-full flex items-center justify-center gap-2 p-2.5 rounded-lg text-white text-xs font-medium transition-all ${isRemovingBackground || !onRemoveBackground
+                                ? 'bg-gradient-to-r from-purple-400 to-pink-400 opacity-60 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
+                            }`}
+                        title="Remove image background using AI"
                     >
-                        <ImageOff className="w-3.5 h-3.5" />
-                        Remove Background (Coming Soon)
+                        {isRemovingBackground ? (
+                            <>
+                                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Removing...
+                            </>
+                        ) : (
+                            <>
+                                <ImageOff className="w-3.5 h-3.5" />
+                                Remove Background
+                            </>
+                        )}
                     </button>
                 </div>
             </div>

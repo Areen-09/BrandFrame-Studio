@@ -103,3 +103,74 @@ export const generateFromTemplate = async (
         throw error;
     }
 };
+
+
+// Product Poster Types
+export interface ProductPosterRequest {
+    user_id: string;
+    brandkit_id: string;
+    product_name: string;
+    product_description?: string;
+    poster_type: string;
+    poster_description?: string;
+    product_image_data?: string;  // Base64 data URL
+    tagline?: string;
+}
+
+export interface ProductPosterResponse {
+    status: string;
+    formats: {
+        facebook?: CanvasFormat;
+        instagram?: CanvasFormat;
+        story?: CanvasFormat;
+    };
+    message: string;
+}
+
+/**
+ * Generate a product poster using AI-designed layouts
+ */
+export const generateProductPoster = async (
+    data: ProductPosterRequest
+): Promise<ProductPosterResponse> => {
+    try {
+        const response = await axios.post<ProductPosterResponse>(
+            `${API_URL}/generate_product_poster`,
+            data
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error generating product poster:', error);
+        throw error;
+    }
+};
+
+
+// Remove Background Types
+export interface RemoveBackgroundRequest {
+    image_data: string;  // Base64 encoded image data URL
+}
+
+export interface RemoveBackgroundResponse {
+    status: string;
+    image_data: string;  // Base64 encoded image with transparent background
+    message?: string;
+}
+
+/**
+ * Remove background from an image using AI
+ */
+export const removeBackground = async (
+    data: RemoveBackgroundRequest
+): Promise<RemoveBackgroundResponse> => {
+    try {
+        const response = await axios.post<RemoveBackgroundResponse>(
+            `${API_URL}/remove_background`,
+            data
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error removing background:', error);
+        throw error;
+    }
+};

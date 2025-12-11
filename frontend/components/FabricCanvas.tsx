@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Canvas, Rect, Textbox, Circle, FabricImage, FabricObject, Triangle, Polygon, Line, Path } from 'fabric';
+import { getProxiedImageUrl } from '@/lib/api';
 
 export interface TextProperties {
     fontFamily: string;
@@ -58,10 +59,14 @@ export interface FabricCanvasHandle {
     // Image formatting methods
     updateImageProperty: (property: string, value: any) => void;
     getSelectedImageProperties: () => ImageProperties | null;
+    getSelectedImageDataUrl: () => string | null;
+    replaceSelectedImage: (dataUrl: string) => Promise<void>;
     flipImage: (direction: 'horizontal' | 'vertical') => void;
     fitImageToCanvas: () => void;
     resetImageSize: () => void;
     deleteSelected: () => void;
+    // Canvas state methods for format switching
+    getCanvasState: () => any;
 }
 
 interface FabricCanvasProps {
@@ -140,6 +145,15 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
 
             fabricCanvas.current = canvas;
 
+            // Bring clicked object to front
+            const handleMouseDown = () => {
+                const activeObject = canvas.getActiveObject();
+                if (activeObject) {
+                    canvas.bringObjectToFront(activeObject);
+                    canvas.requestRenderAll();
+                }
+            };
+
             // Add selection event listeners
             canvas.on('selection:created', handleSelectionChange);
             canvas.on('selection:updated', handleSelectionChange);
@@ -148,11 +162,14 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
                     onSelectionChange(null, false, false, false);
                 }
             });
+            // Add mouse:down listener for bring-to-front behavior
+            canvas.on('mouse:down', handleMouseDown);
 
             return () => {
                 canvas.off('selection:created', handleSelectionChange);
                 canvas.off('selection:updated', handleSelectionChange);
                 canvas.off('selection:cleared');
+                canvas.off('mouse:down', handleMouseDown);
                 canvas.dispose();
                 fabricCanvas.current = null;
             };
@@ -182,12 +199,99 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
                 }
             },
 
-            loadFromJSON: (json) => {
-                if (fabricCanvas.current) {
-                    fabricCanvas.current.loadFromJSON(json).then(() => {
-                        fabricCanvas.current?.requestRenderAll();
-                    });
+            loadFromJSON: async (json) => {
+                if (!fabricCanvas.current) return;
+
+                const canvas = fabricCanvas.current;
+
+                // Separate image objects from other objects
+                const imageObjects: any[] = [];
+                const otherObjects: any[] = [];
+
+                for (const obj of json.objects || []) {
+                    if (obj.type === 'image') {
+                        imageObjects.push(obj);
+                    } else {
+                        otherObjects.push(obj);
+                    }
                 }
+
+                // Set background
+                if (json.background) {
+                    canvas.backgroundColor = json.background;
+                }
+
+                // Clear existing objects
+                canvas.clear();
+                if (json.background) {
+                    canvas.backgroundColor = json.background;
+                }
+
+                // Load non-image objects first
+                if (otherObjects.length > 0) {
+                    await canvas.loadFromJSON({ objects: otherObjects, background: json.background });
+                }
+
+                // Load image objects with crossOrigin set
+                for (const imgObj of imageObjects) {
+                    try {
+                        const imgSrc = imgObj.src;
+                        if (!imgSrc) {
+                            console.warn('Skipping image object with no src');
+                            continue;
+                        }
+
+                        // Route Firebase Storage URLs through our backend proxy to avoid CORS issues
+                        const proxiedSrc = getProxiedImageUrl(imgSrc);
+
+                        // Load image with crossOrigin
+                        const loadImageElement = (src: string): Promise<HTMLImageElement> => {
+                            return new Promise((resolve, reject) => {
+                                const imgElement = new Image();
+                                imgElement.crossOrigin = 'anonymous';
+                                imgElement.onload = () => resolve(imgElement);
+                                imgElement.onerror = () => reject(new Error(`Failed to load image from: ${src.substring(0, 100)}...`));
+                                imgElement.src = src;
+                            });
+                        };
+
+                        const imgElement = await loadImageElement(proxiedSrc);
+                        const fabricImg = new FabricImage(imgElement);
+
+                        // Apply properties from JSON
+                        fabricImg.set({
+                            left: imgObj.left || 0,
+                            top: imgObj.top || 0,
+                            angle: imgObj.angle || 0,
+                            flipX: imgObj.flipX || false,
+                            flipY: imgObj.flipY || false,
+                            opacity: imgObj.opacity ?? 1,
+                            originX: imgObj.originX || 'left',
+                            originY: imgObj.originY || 'top',
+                        });
+
+                        // Handle scaling
+                        if (imgObj.scaleToWidth) {
+                            fabricImg.scaleToWidth(imgObj.scaleToWidth);
+                        } else if (imgObj.scaleToHeight) {
+                            fabricImg.scaleToHeight(imgObj.scaleToHeight);
+                        } else {
+                            fabricImg.set({
+                                scaleX: imgObj.scaleX || 1,
+                                scaleY: imgObj.scaleY || 1,
+                            });
+                        }
+
+                        canvas.add(fabricImg);
+                    } catch (error) {
+                        // Log with more details - the error event object doesn't stringify well
+                        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                        console.error(`Failed to load image in loadFromJSON: ${errorMessage}`);
+                        console.error('Image object that failed:', imgObj);
+                    }
+                }
+
+                canvas.requestRenderAll();
             },
 
             addText: (text, options = {}) => {
@@ -216,7 +320,7 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
                             // Use Fabric's SVG loading for better SVG support
                             const { loadSVGFromURL, util } = await import('fabric');
 
-                            loadSVGFromURL(url).then((result) => {
+                            loadSVGFromURL(url, undefined, { crossOrigin: 'anonymous' }).then((result) => {
                                 const validObjects = (result.objects || []).filter((obj): obj is NonNullable<typeof obj> => obj !== null);
                                 if (validObjects.length > 0) {
                                     // Group all SVG elements together
@@ -513,6 +617,65 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
                 return null;
             },
 
+            getSelectedImageDataUrl: (): string | null => {
+                if (!fabricCanvas.current) return null;
+                const activeObject = fabricCanvas.current.getActiveObject();
+                if (activeObject && isImageObject(activeObject)) {
+                    const imgObj = activeObject as FabricImage;
+                    // Export the image object to a data URL
+                    return imgObj.toDataURL({
+                        format: 'png',
+                        quality: 1,
+                    });
+                }
+                return null;
+            },
+
+            replaceSelectedImage: async (dataUrl: string): Promise<void> => {
+                if (!fabricCanvas.current) return;
+                const activeObject = fabricCanvas.current.getActiveObject();
+                if (activeObject && isImageObject(activeObject)) {
+                    // Store the position and scale of the current image
+                    const currentProps = {
+                        left: activeObject.left,
+                        top: activeObject.top,
+                        scaleX: activeObject.scaleX,
+                        scaleY: activeObject.scaleY,
+                        angle: activeObject.angle,
+                        flipX: activeObject.flipX,
+                        flipY: activeObject.flipY,
+                    };
+
+                    // Load the new image
+                    const loadImageElement = (src: string): Promise<HTMLImageElement> => {
+                        return new Promise((resolve, reject) => {
+                            const imgElement = new Image();
+                            imgElement.crossOrigin = 'anonymous';
+                            imgElement.onload = () => resolve(imgElement);
+                            imgElement.onerror = (e) => reject(e);
+                            imgElement.src = src;
+                        });
+                    };
+
+                    try {
+                        const imgElement = await loadImageElement(dataUrl);
+                        const newImg = new FabricImage(imgElement);
+
+                        // Apply the same position and scale as the original
+                        newImg.set(currentProps);
+
+                        // Remove old image and add new one
+                        fabricCanvas.current.remove(activeObject);
+                        fabricCanvas.current.add(newImg);
+                        fabricCanvas.current.setActiveObject(newImg);
+                        fabricCanvas.current.requestRenderAll();
+                        handleSelectionChange();
+                    } catch (error) {
+                        console.error('Failed to replace image:', error);
+                    }
+                }
+            },
+
             flipImage: (direction: 'horizontal' | 'vertical') => {
                 if (!fabricCanvas.current) return;
                 const activeObject = fabricCanvas.current.getActiveObject();
@@ -567,6 +730,11 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
                     fabricCanvas.current.remove(activeObject);
                     fabricCanvas.current.requestRenderAll();
                 }
+            },
+
+            getCanvasState: () => {
+                if (!fabricCanvas.current) return null;
+                return fabricCanvas.current.toJSON();
             },
         }));
 

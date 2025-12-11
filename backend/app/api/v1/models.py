@@ -36,3 +36,32 @@ class TemplateInfo(BaseModel):
 
 class TemplateListResponse(BaseModel):
     templates: List[TemplateInfo]
+
+
+# Product Poster Generation Models
+class ProductPosterRequest(BaseModel):
+    user_id: str
+    brandkit_id: str
+    product_name: str
+    product_description: Optional[str] = None
+    poster_type: str  # sale, promotion, event, new_arrival, seasonal, clearance, bundle, loyalty
+    poster_description: Optional[str] = None
+    product_image_data: Optional[str] = None  # Base64 data URL of uploaded product image
+    tagline: Optional[str] = None
+
+
+class ProductPosterResponse(BaseModel):
+    status: str
+    formats: Dict[str, Any]  # Contains canvas JSON for each format (facebook, instagram, story)
+    message: str
+
+
+# Remove Background Models
+class RemoveBackgroundRequest(BaseModel):
+    image_data: str  # Base64 encoded image data URL
+
+
+class RemoveBackgroundResponse(BaseModel):
+    status: str
+    image_data: str  # Base64 encoded image with transparent background
+    message: Optional[str] = None
