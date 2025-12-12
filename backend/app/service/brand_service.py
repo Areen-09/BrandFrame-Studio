@@ -1,21 +1,7 @@
 from typing import Dict
 import firebase_admin
 from firebase_admin import credentials, firestore
-from app.core.config import settings
-
-# Build Firebase credentials from environment variables
-firebase_credentials = {
-    "type": settings.FIREBASE_TYPE,
-    "project_id": settings.FIREBASE_PROJECT_ID,
-    "private_key_id": settings.FIREBASE_PRIVATE_KEY_ID,
-    "private_key": settings.FIREBASE_PRIVATE_KEY,
-    "client_email": settings.FIREBASE_CLIENT_EMAIL,
-    "client_id": settings.FIREBASE_CLIENT_ID,
-    "auth_uri": settings.FIREBASE_AUTH_URI,
-    "token_uri": settings.FIREBASE_TOKEN_URI,
-    "auth_provider_x509_cert_url": settings.FIREBASE_AUTH_PROVIDER_CERT_URL,
-    "client_x509_cert_url": settings.FIREBASE_CLIENT_CERT_URL,
-}
+from app.core.config import firebase_credentials
 
 # Initialize Firebase Admin
 if not firebase_admin._apps:
