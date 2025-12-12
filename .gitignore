@@ -43,7 +43,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-backend/brandframe-studio-479ef-firebase-adminsdk-fbsvc-78ea90e39f.json
 
 # Virtual Environments
 venv/

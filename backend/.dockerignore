@@ -1,0 +1,27 @@
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Environment variables (add these in HuggingFace Spaces secrets)
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Cache
+.cache/
+*.pyc
+
+# Misc
+*.log
+.DS_Store
